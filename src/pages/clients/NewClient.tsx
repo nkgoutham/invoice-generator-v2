@@ -1,0 +1,347 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { useClientStore } from '../../store/clientStore';
+import { useAuthStore } from '../../store/authStore';
+import { engagementTypes } from '../../utils/helpers';
+
+const NewClient = () => {
+  const navigate = useNavigate();
+  const { createClient, createEngagementModel } = useClientStore();
+  const { user } = useAuthStore();
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    company_name: '',
+    billing_address: '',
+    gst_number: '',
+    contact_person: '',
+    email: '',
+    phone: '',
+    status: 'active',
+    engagement_status: 'active'  // Changed default from 'onboarding' to 'active'
+  });
+
+  const [engagementData, setEngagementData] = useState({
+    type: 'service',
+    retainer_amount: '',
+    project_value: '',
+    service_rates: [{ name: 'Hourly Rate', rate: 0, unit: 'hour' }]
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEngagementChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEngagementData(prev => ({ ...prev, type: e.target.value }));
+    
+    // Update the engagement status based on the engagement type
+    if (e.target.value === 'retainership') {
+      setFormData(prev => ({ ...prev, engagement_status: 'retainer' }));
+    } else if (e.target.value === 'project') {
+      setFormData(prev => ({ ...prev, engagement_status: 'project' }));
+    } else {
+      setFormData(prev => ({ ...prev, engagement_status: 'active' }));
+    }
+  };
+
+  const handleRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'retainer_amount' || name === 'project_value') {
+      setEngagementData(prev => ({ ...prev, [name]: value }));
+    } else if (name === 'hourly_rate') {
+      // Update the first service rate
+      const updatedRates = [...engagementData.service_rates];
+      updatedRates[0] = { ...updatedRates[0], rate: parseFloat(value) || 0 };
+      setEngagementData(prev => ({ ...prev, service_rates: updatedRates }));
+    }
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      toast.error('Client name is required');
+      return;
+    }
+    
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Create client
+      const client = await createClient({ ...formData, user_id: user.id });
+      
+      if (client) {
+        // Create engagement model
+        const engagementModelData = {
+          client_id: client.id,
+          type: engagementData.type as 'retainership' | 'project' | 'milestone' | 'service',
+          retainer_amount: engagementData.type === 'retainership' ? parseFloat(engagementData.retainer_amount) || null : null,
+          project_value: engagementData.type === 'project' ? parseFloat(engagementData.project_value) || null : null,
+          service_rates: engagementData.type === 'service' ? engagementData.service_rates : null
+        };
+        
+        await createEngagementModel(engagementModelData);
+        
+        toast.success('Client created successfully');
+        navigate('/clients');
+      }
+    } catch (error) {
+      console.error('Error adding client:', error);
+      toast.error('Failed to create client');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Add New Client</h1>
+        
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Client Name *
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="company_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  id="company_name"
+                  name="company_name"
+                  value={formData.company_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="contact_person" className="block text-sm font-medium text-gray-700 mb-1">
+                  Contact Person
+                </label>
+                <input
+                  type="text"
+                  id="contact_person"
+                  name="contact_person"
+                  value={formData.contact_person}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="text"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label htmlFor="billing_address" className="block text-sm font-medium text-gray-700 mb-1">
+                  Billing Address
+                </label>
+                <textarea
+                  id="billing_address"
+                  name="billing_address"
+                  value={formData.billing_address}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="gst_number" className="block text-sm font-medium text-gray-700 mb-1">
+                  GST Number
+                </label>
+                <input
+                  type="text"
+                  id="gst_number"
+                  name="gst_number"
+                  value={formData.gst_number}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                  Client Status
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="prospect">Prospect</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Engagement Model Section */}
+            <div className="mt-8">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Engagement Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="col-span-2">
+                  <label htmlFor="engagement_type" className="block text-sm font-medium text-gray-700 mb-1">
+                    Engagement Type *
+                  </label>
+                  <select
+                    id="engagement_type"
+                    name="engagement_type"
+                    value={engagementData.type}
+                    onChange={handleEngagementChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {engagementTypes.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {engagementData.type === 'retainership' && (
+                  <div className="col-span-2">
+                    <label htmlFor="retainer_amount" className="block text-sm font-medium text-gray-700 mb-1">
+                      Monthly Retainer Amount
+                    </label>
+                    <div className="flex">
+                      <div className="flex items-center justify-center bg-gray-100 px-3 border border-r-0 border-gray-300 rounded-l-md">
+                        ₹
+                      </div>
+                      <input
+                        type="number"
+                        id="retainer_amount"
+                        name="retainer_amount"
+                        value={engagementData.retainer_amount}
+                        onChange={handleRateChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {engagementData.type === 'project' && (
+                  <div className="col-span-2">
+                    <label htmlFor="project_value" className="block text-sm font-medium text-gray-700 mb-1">
+                      Project Value
+                    </label>
+                    <div className="flex">
+                      <div className="flex items-center justify-center bg-gray-100 px-3 border border-r-0 border-gray-300 rounded-l-md">
+                        ₹
+                      </div>
+                      <input
+                        type="number"
+                        id="project_value"
+                        name="project_value"
+                        value={engagementData.project_value}
+                        onChange={handleRateChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {engagementData.type === 'service' && (
+                  <div className="col-span-2">
+                    <label htmlFor="hourly_rate" className="block text-sm font-medium text-gray-700 mb-1">
+                      Hourly Rate
+                    </label>
+                    <div className="flex">
+                      <div className="flex items-center justify-center bg-gray-100 px-3 border border-r-0 border-gray-300 rounded-l-md">
+                        ₹
+                      </div>
+                      <input
+                        type="number"
+                        id="hourly_rate"
+                        name="hourly_rate"
+                        value={engagementData.service_rates[0].rate}
+                        onChange={handleRateChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-8 flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => navigate('/clients')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70"
+              >
+                {isSubmitting ? 'Saving...' : 'Save Client'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default NewClient;

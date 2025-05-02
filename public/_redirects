@@ -1,0 +1,5 @@
+# Netlify redirect configuration
+# This ensures all routes are handled by the React Router
+# and direct access to routes like /dashboard works properly
+
+/*    /index.html   200
