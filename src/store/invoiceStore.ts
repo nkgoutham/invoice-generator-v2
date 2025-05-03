@@ -1,6 +1,8 @@
 import { create } from 'zustand';
-import { supabase, Invoice, InvoiceItem } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { Invoice, InvoiceItem } from '../lib/supabase';
 import { generateInvoiceNumber } from '../utils/helpers';
+import toast from 'react-hot-toast';
 import { PaymentDetails } from '../types/invoice';
 
 interface InvoiceState {
@@ -10,17 +12,16 @@ interface InvoiceState {
   loading: boolean;
   error: string | null;
   fetchInvoices: (userId: string) => Promise<void>;
-  fetchInvoice: (invoiceId: string) => Promise<void>;
+  fetchInvoice: (id: string) => Promise<void>;
   fetchInvoiceItems: (invoiceId: string) => Promise<void>;
-  createInvoice: (invoice: Partial<Invoice>, items: Partial<InvoiceItem>[]) => Promise<Invoice | null>;
-  updateInvoice: (invoiceId: string, updates: Partial<Invoice>) => Promise<void>;
-  updateInvoiceStatus: (invoiceId: string, status: Invoice['status']) => Promise<void>;
-  deleteInvoice: (invoiceId: string) => Promise<void>;
-  createInvoiceItem: (item: Partial<InvoiceItem>) => Promise<void>;
-  updateInvoiceItem: (itemId: string, updates: Partial<InvoiceItem>) => Promise<void>;
-  deleteInvoiceItem: (itemId: string) => Promise<void>;
   generateInvoiceNumber: (userId: string) => Promise<string>;
-  recordPayment: (invoiceId: string, paymentDetails: PaymentDetails) => Promise<void>;
+  createInvoice: (
+    invoiceData: Partial<Invoice>,
+    invoiceItems: Array<Partial<InvoiceItem>> | Array<{name: string, amount: number}>
+  ) => Promise<Invoice | null>;
+  updateInvoiceStatus: (id: string, status: 'draft' | 'sent' | 'paid' | 'overdue' | 'partially_paid') => Promise<void>;
+  deleteInvoice: (id: string) => Promise<void>;
+  recordPayment: (id: string, paymentDetails: PaymentDetails) => Promise<void>;
 }
 
 export const useInvoiceStore = create<InvoiceState>((set, get) => ({
@@ -29,349 +30,349 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   invoiceItems: [],
   loading: false,
   error: null,
-  
-  fetchInvoices: async (userId) => {
+
+  fetchInvoices: async (userId: string) => {
     try {
       set({ loading: true, error: null });
       
       const { data, error } = await supabase
         .from('invoices')
-        .select('*, clients(name, company_name)')
+        .select(`
+          *,
+          clients:client_id (
+            id,
+            name,
+            company_name,
+            email,
+            phone,
+            billing_address
+          )
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      set({ invoices: data as unknown as Invoice[] });
+      set({ invoices: data || [] });
     } catch (error: any) {
-      console.error('Fetch invoices error:', error);
-      set({ error: error.message || 'Failed to fetch invoices' });
+      console.error('Error fetching invoices:', error);
+      set({ error: error.message });
     } finally {
       set({ loading: false });
     }
   },
-  
-  fetchInvoice: async (invoiceId) => {
+
+  fetchInvoice: async (id: string) => {
     try {
       set({ loading: true, error: null });
       
       const { data, error } = await supabase
         .from('invoices')
-        .select('*, clients(name, company_name, billing_address, email, phone, gst_number)')
-        .eq('id', invoiceId)
+        .select(`
+          *,
+          clients:client_id (
+            id,
+            name,
+            company_name,
+            email,
+            phone,
+            billing_address,
+            gst_number
+          )
+        `)
+        .eq('id', id)
         .single();
       
       if (error) throw error;
       
-      set({ selectedInvoice: data as unknown as Invoice });
+      set({ selectedInvoice: data });
     } catch (error: any) {
-      console.error('Fetch invoice error:', error);
-      set({ error: error.message || 'Failed to fetch invoice' });
+      console.error('Error fetching invoice:', error);
+      set({ error: error.message });
     } finally {
       set({ loading: false });
     }
   },
-  
-  fetchInvoiceItems: async (invoiceId) => {
+
+  fetchInvoiceItems: async (invoiceId: string) => {
     try {
       set({ loading: true, error: null });
       
       const { data, error } = await supabase
         .from('invoice_items')
-        .select('*, tasks(name)')
+        .select('*')
         .eq('invoice_id', invoiceId);
       
       if (error) throw error;
       
-      set({ invoiceItems: data as unknown as InvoiceItem[] });
+      set({ invoiceItems: data || [] });
     } catch (error: any) {
-      console.error('Fetch invoice items error:', error);
-      set({ error: error.message || 'Failed to fetch invoice items' });
+      console.error('Error fetching invoice items:', error);
+      set({ error: error.message });
     } finally {
       set({ loading: false });
     }
   },
-  
-  createInvoice: async (invoice, items) => {
+
+  generateInvoiceNumber: async (userId: string) => {
+    try {
+      // Get the latest invoice for this user
+      const { data: latestInvoice } = await supabase
+        .from('invoices')
+        .select('invoice_number')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      // Generate a new invoice number based on the latest one or use a default format
+      let nextInvoice;
+      
+      if (latestInvoice && latestInvoice.length > 0 && latestInvoice[0].invoice_number) {
+        // Parse the existing format and increment
+        const currentNumber = latestInvoice[0].invoice_number;
+        const parts = currentNumber.split('-');
+        
+        if (parts.length >= 4) {
+          // Format: INV-YYYY-MM-XXX
+          const currentYear = parts[1];
+          const currentMonth = parts[2];
+          const currentSeq = parseInt(parts[3], 10);
+          
+          const now = new Date();
+          const year = now.getFullYear().toString();
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          
+          if (currentYear === year && currentMonth === month) {
+            // Same month, increment the sequence
+            const nextSeq = (currentSeq + 1).toString().padStart(3, '0');
+            nextInvoice = `INV-${year}-${month}-${nextSeq}`;
+          } else {
+            // New month, reset sequence
+            nextInvoice = `INV-${year}-${month}-001`;
+          }
+        } else {
+          nextInvoice = generateInvoiceNumber('INV', userId);
+        }
+      } else {
+        nextInvoice = generateInvoiceNumber('INV', userId);
+      }
+      
+      return nextInvoice;
+    } catch (error) {
+      console.error('Error generating invoice number:', error);
+      return generateInvoiceNumber('INV', userId);
+    }
+  },
+
+  createInvoice: async (invoiceData, invoiceItems) => {
     try {
       set({ loading: true, error: null });
       
-      // Check if this invoice number already exists for this user
-      const { data: existingInvoice, error: checkError } = await supabase
+      // First, insert the invoice
+      const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
-        .select('id')
-        .eq('user_id', invoice.user_id)
-        .eq('invoice_number', invoice.invoice_number)
-        .maybeSingle();
+        .insert([invoiceData])
+        .select()
+        .single();
       
-      if (checkError) throw checkError;
+      if (invoiceError) throw invoiceError;
       
-      let createdInvoice: Invoice;
-      
-      if (existingInvoice) {
-        // Update existing invoice instead of creating a new one
-        const { data: updatedInvoice, error: updateError } = await supabase
-          .from('invoices')
-          .update({
-            client_id: invoice.client_id,
-            issue_date: invoice.issue_date,
-            due_date: invoice.due_date,
-            status: invoice.status,
-            subtotal: invoice.subtotal,
-            tax: invoice.tax,
-            total: invoice.total,
-            notes: invoice.notes,
-            currency: invoice.currency,
-            engagement_type: invoice.engagement_type,
-            tax_percentage: invoice.tax_percentage,
-            reverse_calculation: invoice.reverse_calculation
-          })
-          .eq('id', existingInvoice.id)
-          .select()
-          .single();
+      if (invoice) {
+        // Format items based on engagement type
+        let formattedItems;
         
-        if (updateError) throw updateError;
+        if (invoiceData.engagement_type === 'milestone') {
+          // For milestone-based invoices
+          formattedItems = (invoiceItems as Array<{name: string, amount: number}>).map(milestone => ({
+            invoice_id: invoice.id,
+            milestone_name: milestone.name,
+            description: null, // Not required for milestones
+            quantity: 1,
+            rate: milestone.amount,
+            amount: milestone.amount
+          }));
+        } else if (invoiceData.engagement_type === 'retainership') {
+          // For retainership-based invoices
+          const item = invoiceItems[0] as Partial<InvoiceItem>;
+          formattedItems = [{
+            invoice_id: invoice.id,
+            description: item.description || 'Monthly Retainer Fee',
+            quantity: 1,
+            rate: item.rate || 0,
+            amount: item.amount || 0,
+            retainer_period: (invoiceData as any).retainer_period || null
+          }];
+        } else if (invoiceData.engagement_type === 'project') {
+          // For project-based invoices
+          const item = invoiceItems[0] as Partial<InvoiceItem>;
+          formattedItems = [{
+            invoice_id: invoice.id,
+            description: item.description || 'Project Fee',
+            quantity: 1,
+            rate: item.rate || 0,
+            amount: item.amount || 0,
+            project_description: (invoiceData as any).project_description || null
+          }];
+        } else {
+          // For service/hourly-based invoices or default case
+          formattedItems = (invoiceItems as Array<Partial<InvoiceItem>>).map(item => ({
+            invoice_id: invoice.id,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.rate,
+            amount: item.amount
+          }));
+        }
         
-        createdInvoice = updatedInvoice as Invoice;
-        
-        // Delete existing items
-        const { error: deleteError } = await supabase
-          .from('invoice_items')
-          .delete()
-          .eq('invoice_id', existingInvoice.id);
-        
-        if (deleteError) throw deleteError;
-        
-      } else {
-        // Create new invoice
-        const { data: newInvoice, error: createError } = await supabase
-          .from('invoices')
-          .insert([invoice])
-          .select()
-          .single();
-        
-        if (createError) throw createError;
-        
-        createdInvoice = newInvoice as Invoice;
-      }
-      
-      // Add items with the invoice ID
-      if (items.length > 0) {
-        const itemsWithInvoiceId = items.map(item => ({
-          ...item,
-          invoice_id: createdInvoice.id
-        }));
-        
+        // Then, insert the invoice items
         const { error: itemsError } = await supabase
           .from('invoice_items')
-          .insert(itemsWithInvoiceId);
+          .insert(formattedItems);
         
         if (itemsError) throw itemsError;
+        
+        // Fetch the updated invoices list
+        if (invoiceData.user_id) {
+          await get().fetchInvoices(invoiceData.user_id);
+        }
+        
+        return invoice;
       }
       
-      // Update the invoices list in state
-      set((state) => {
-        // Remove the existing invoice from the list if it was updated
-        const filteredInvoices = existingInvoice 
-          ? state.invoices.filter(inv => inv.id !== existingInvoice.id)
-          : state.invoices;
-          
-        return { 
-          invoices: [createdInvoice, ...filteredInvoices],
-          selectedInvoice: createdInvoice 
-        };
-      });
-      
-      return createdInvoice;
+      return null;
     } catch (error: any) {
-      console.error('Create invoice error:', error);
-      set({ error: error.message || 'Failed to create invoice' });
+      console.error('Error creating invoice:', error);
+      set({ error: error.message });
+      toast.error('Failed to create invoice: ' + error.message);
       return null;
     } finally {
       set({ loading: false });
     }
   },
-  
-  updateInvoice: async (invoiceId, updates) => {
+
+  updateInvoiceStatus: async (id, status) => {
     try {
       set({ loading: true, error: null });
       
-      const { data, error } = await supabase
+      let updateData: any = { status };
+      
+      // If marking as paid, set the payment date to today
+      if (status === 'paid' && !get().selectedInvoice?.payment_date) {
+        updateData.payment_date = new Date().toISOString().split('T')[0];
+      }
+      
+      // If marking as sent and the invoice is currently draft, set the issue_date to today if it's not already set
+      if (status === 'sent' && get().selectedInvoice?.status === 'draft') {
+        if (!get().selectedInvoice?.issue_date) {
+          updateData.issue_date = new Date().toISOString().split('T')[0];
+        }
+      }
+      
+      const { error } = await supabase
         .from('invoices')
-        .update(updates)
-        .eq('id', invoiceId)
-        .select()
-        .single();
+        .update(updateData)
+        .eq('id', id);
       
       if (error) throw error;
       
-      const updatedInvoice = data as Invoice;
+      // Update the local state
+      const updatedInvoice = { ...get().selectedInvoice, ...updateData } as Invoice;
+      set({ selectedInvoice: updatedInvoice });
       
-      set((state) => ({ 
-        invoices: state.invoices.map(inv => 
-          inv.id === invoiceId ? updatedInvoice : inv
-        ),
-        selectedInvoice: state.selectedInvoice?.id === invoiceId 
-          ? updatedInvoice 
-          : state.selectedInvoice
-      }));
+      // Update the invoices list too
+      const updatedInvoices = get().invoices.map(invoice => 
+        invoice.id === id ? { ...invoice, ...updateData } : invoice
+      );
+      set({ invoices: updatedInvoices });
     } catch (error: any) {
-      console.error('Update invoice error:', error);
-      set({ error: error.message || 'Failed to update invoice' });
+      console.error('Error updating invoice status:', error);
+      set({ error: error.message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  deleteInvoice: async (id) => {
+    try {
+      set({ loading: true, error: null });
+      
+      // First, delete all invoice items
+      const { error: itemsError } = await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', id);
+      
+      if (itemsError) throw itemsError;
+      
+      // Then, delete the invoice
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update the invoices list
+      const updatedInvoices = get().invoices.filter(invoice => invoice.id !== id);
+      set({ invoices: updatedInvoices, selectedInvoice: null });
+      
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error);
+      set({ error: error.message });
     } finally {
       set({ loading: false });
     }
   },
   
-  updateInvoiceStatus: async (invoiceId, status) => {
-    await get().updateInvoice(invoiceId, { status });
-  },
-
-  recordPayment: async (invoiceId, paymentDetails) => {
+  recordPayment: async (id, paymentDetails) => {
     try {
       set({ loading: true, error: null });
-
-      const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
       
       const { selectedInvoice } = get();
-      if (!selectedInvoice) throw new Error('No invoice selected');
-
-      const updateData: Partial<Invoice> = {
+      if (!selectedInvoice) throw new Error('Invoice not found');
+      
+      const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
+      
+      // Determine if this is a full or partial payment
+      let updateData: any = {
         payment_date,
         payment_method,
-        payment_reference,
+        payment_reference
       };
-
-      // If partial payment
+      
       if (is_partially_paid) {
         updateData.status = 'partially_paid';
         updateData.is_partially_paid = true;
         updateData.partially_paid_amount = amount;
       } else {
-        // Full payment
         updateData.status = 'paid';
         updateData.is_partially_paid = false;
       }
-
-      await get().updateInvoice(invoiceId, updateData);
-    } catch (error: any) {
-      console.error('Record payment error:', error);
-      set({ error: error.message || 'Failed to record payment' });
-    } finally {
-      set({ loading: false });
-    }
-  },
-  
-  deleteInvoice: async (invoiceId) => {
-    try {
-      set({ loading: true, error: null });
       
-      // Delete invoice items first (cascade should handle this, but being explicit)
-      const { error: itemsError } = await supabase
-        .from('invoice_items')
-        .delete()
-        .eq('invoice_id', invoiceId);
-      
-      if (itemsError) throw itemsError;
-      
-      // Then delete the invoice
       const { error } = await supabase
         .from('invoices')
-        .delete()
-        .eq('id', invoiceId);
+        .update(updateData)
+        .eq('id', id);
       
       if (error) throw error;
       
-      set((state) => ({ 
-        invoices: state.invoices.filter(inv => inv.id !== invoiceId),
-        selectedInvoice: state.selectedInvoice?.id === invoiceId 
-          ? null 
-          : state.selectedInvoice,
-        invoiceItems: state.selectedInvoice?.id === invoiceId 
-          ? [] 
-          : state.invoiceItems
-      }));
+      // Update the local state
+      const updatedInvoice = { ...get().selectedInvoice, ...updateData } as Invoice;
+      set({ selectedInvoice: updatedInvoice });
+      
+      // Update the invoices list too
+      const updatedInvoices = get().invoices.map(invoice => 
+        invoice.id === id ? { ...invoice, ...updateData } : invoice
+      );
+      set({ invoices: updatedInvoices });
+      
+      return;
     } catch (error: any) {
-      console.error('Delete invoice error:', error);
-      set({ error: error.message || 'Failed to delete invoice' });
+      console.error('Error recording payment:', error);
+      set({ error: error.message });
+      throw error;
     } finally {
       set({ loading: false });
     }
-  },
-  
-  createInvoiceItem: async (item) => {
-    try {
-      set({ loading: true, error: null });
-      
-      const { data, error } = await supabase
-        .from('invoice_items')
-        .insert([item])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      set((state) => ({ 
-        invoiceItems: [...state.invoiceItems, data as InvoiceItem] 
-      }));
-    } catch (error: any) {
-      console.error('Create invoice item error:', error);
-      set({ error: error.message || 'Failed to create invoice item' });
-    } finally {
-      set({ loading: false });
-    }
-  },
-  
-  updateInvoiceItem: async (itemId, updates) => {
-    try {
-      set({ loading: true, error: null });
-      
-      const { data, error } = await supabase
-        .from('invoice_items')
-        .update(updates)
-        .eq('id', itemId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      set((state) => ({ 
-        invoiceItems: state.invoiceItems.map(item => 
-          item.id === itemId ? (data as InvoiceItem) : item
-        ) 
-      }));
-    } catch (error: any) {
-      console.error('Update invoice item error:', error);
-      set({ error: error.message || 'Failed to update invoice item' });
-    } finally {
-      set({ loading: false });
-    }
-  },
-  
-  deleteInvoiceItem: async (itemId) => {
-    try {
-      set({ loading: true, error: null });
-      
-      const { error } = await supabase
-        .from('invoice_items')
-        .delete()
-        .eq('id', itemId);
-      
-      if (error) throw error;
-      
-      set((state) => ({ 
-        invoiceItems: state.invoiceItems.filter(item => item.id !== itemId) 
-      }));
-    } catch (error: any) {
-      console.error('Delete invoice item error:', error);
-      set({ error: error.message || 'Failed to delete invoice item' });
-    } finally {
-      set({ loading: false });
-    }
-  },
-  
-  generateInvoiceNumber: async (userId) => {
-    const invoiceNumber = generateInvoiceNumber('INV', userId);
-    return invoiceNumber;
   }
 }));

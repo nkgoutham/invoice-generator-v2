@@ -63,18 +63,33 @@ const Dashboard = () => {
       const paidInvoices = invoices.filter(inv => inv.status === 'paid').length;
       const overdueInvoices = invoices.filter(inv => inv.status === 'overdue').length;
       const partiallyPaidInvoices = invoices.filter(inv => inv.status === 'partially_paid').length;
+      const sentInvoices = invoices.filter(inv => inv.status === 'sent').length;
+      const draftInvoices = invoices.filter(inv => inv.status === 'draft').length;
+      
+      // Calculate the breakdown description
+      const statusBreakdown = [];
+      if (paidInvoices > 0) statusBreakdown.push(`${paidInvoices} paid`);
+      if (sentInvoices > 0) statusBreakdown.push(`${sentInvoices} sent`);
+      if (overdueInvoices > 0) statusBreakdown.push(`${overdueInvoices} overdue`);
+      if (partiallyPaidInvoices > 0) statusBreakdown.push(`${partiallyPaidInvoices} partial`);
+      if (draftInvoices > 0) statusBreakdown.push(`${draftInvoices} draft`);
+      
+      const statusDescription = statusBreakdown.join(', ') || 'No invoices';
       
       const totalRevenue = invoices
         .filter(inv => inv.status === 'paid')
         .reduce((sum, inv) => sum + inv.total, 0);
       
+      // Include both sent and overdue invoices in pending revenue
       const pendingRevenue = invoices
         .filter(inv => ['sent', 'overdue'].includes(inv.status))
         .reduce((sum, inv) => sum + inv.total, 0);
 
+      // Add partially paid invoices (only the remaining amount)
       const partialRevenue = invoices
         .filter(inv => inv.status === 'partially_paid')
         .reduce((sum, inv) => {
+          // Calculate the remaining amount (total - paid amount)
           const remainingAmount = inv.total - (inv.partially_paid_amount || 0);
           return sum + remainingAmount;
         }, 0);
@@ -94,7 +109,7 @@ const Dashboard = () => {
         {
           title: 'Total Invoices',
           value: totalInvoices,
-          description: `${paidInvoices} paid, ${overdueInvoices} overdue, ${partiallyPaidInvoices} partial`,
+          description: statusDescription,
           icon: <FileText className="h-5 w-5" />,
           color: 'text-purple-600',
           bgColor: 'bg-purple-50',

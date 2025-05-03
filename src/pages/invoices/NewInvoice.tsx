@@ -235,10 +235,21 @@ const NewInvoice = () => {
         setValue('tax_percentage', existingInvoice.tax_percentage);
         setValue('reverse_calculation', existingInvoice.reverse_calculation);
         
+        // Set items based on engagement type
         if (existingInvoice.engagement_type === 'milestone' && existingInvoice.milestones) {
           setValue('milestones', existingInvoice.milestones);
-        } else {
+        } else if (existingInvoice.items) {
           setValue('items', existingInvoice.items);
+          
+          // For retainership, set the retainer period if available
+          if (existingInvoice.engagement_type === 'retainership' && existingInvoice.retainer_period) {
+            setValue('retainer_period', existingInvoice.retainer_period);
+          }
+          
+          // For project, set the project description if available
+          if (existingInvoice.engagement_type === 'project' && existingInvoice.project_description) {
+            setValue('project_description', existingInvoice.project_description);
+          }
         }
       }
     }
@@ -488,7 +499,7 @@ const NewInvoice = () => {
       if (formValues.engagement_type === 'milestone' && formValues.milestones) {
         // For milestone-based, create an item for each milestone
         invoiceItems = formValues.milestones.map(milestone => ({
-          description: milestone.name,
+          description: null, // Not needed for milestones
           quantity: 1,
           rate: parseFloat(milestone.amount?.toString() || '0'),
           amount: parseFloat(milestone.amount?.toString() || '0'),
