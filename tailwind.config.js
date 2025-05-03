@@ -109,6 +109,9 @@ export default {
       transitionDuration: {
         '400': '400ms',
       },
+      screens: {
+        'xs': '420px', // Add extra small breakpoint
+      },
     },
   },
   plugins: [require('@tailwindcss/forms')],

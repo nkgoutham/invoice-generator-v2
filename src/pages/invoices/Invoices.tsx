@@ -125,12 +125,12 @@ const Invoices = () => {
   }
   
   return (
-    <div>
+    <div className="px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Invoices</h1>
         <Link
           to="/invoices/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           Create Invoice
@@ -143,10 +143,10 @@ const Invoices = () => {
         </div>
       )}
       
-      {/* Filters, search, and sort */}
-      <div className="bg-white shadow rounded-lg mb-6">
+      {/* Filters, search, and sort - Mobile optimized */}
+      <div className="bg-white shadow rounded-lg mb-4 sm:mb-6">
         <div className="p-4 border-b border-gray-200">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Search */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

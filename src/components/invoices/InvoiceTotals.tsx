@@ -18,7 +18,7 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
   reverseCalculation
 }) => {
   return (
-    <div className="p-6 border-b border-gray-200 bg-gray-50">
+    <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
       <div className="flex flex-col sm:items-end">
         <div className="sm:w-64 space-y-2">
           <div className="flex justify-between">

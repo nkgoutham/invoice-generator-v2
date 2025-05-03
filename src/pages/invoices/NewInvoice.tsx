@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { useInvoiceStore } from '../../store/invoiceStore';
@@ -7,9 +7,10 @@ import { useClientStore } from '../../store/clientStore';
 import { useProfileStore } from '../../store/profileStore';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { calculateDueDate } from '../../utils/helpers';
+import { calculateDueDate, calculateInvoiceTotals } from '../../utils/helpers';
 import { EngagementModel, Client } from '../../lib/supabase';
 import { InvoiceFormData, InvoicePreviewData } from '../../types/invoice';
+import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 
 // Import components
 import InvoiceHeader from '../../components/invoices/InvoiceHeader';
@@ -21,11 +22,19 @@ import TaxSettings from '../../components/invoices/TaxSettings';
 import InvoiceTotals from '../../components/invoices/InvoiceTotals';
 import InvoiceNotes from '../../components/invoices/InvoiceNotes';
 import ActionButtons from '../../components/invoices/ActionButtons';
-import InvoicePreviewModal from '../../components/invoices/InvoicePreviewModal';
+
+// Use lazy loading for the modal component which is not needed immediately
+const InvoicePreviewModal = lazy(() => 
+  import('../../components/invoices/InvoicePreviewModal')
+);
 
 const NewInvoice = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  
+  const editMode = location.state?.isEditing;
+  const existingInvoice = location.state?.invoice;
   const preselectedClientId = searchParams.get('client');
   
   const { user } = useAuthStore();
@@ -42,6 +51,7 @@ const NewInvoice = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
   const [isSavingFromPreview, setIsSavingFromPreview] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   const { 
     register, 
@@ -59,7 +69,8 @@ const NewInvoice = () => {
       tax_percentage: 0,
       reverse_calculation: false,
       items: [{ description: '', quantity: 1, rate: 0, amount: 0 }],
-      milestones: [{ name: 'Milestone 1', amount: 0 }]
+      milestones: [{ name: 'Milestone 1', amount: 0 }],
+      engagement_type: 'service' // Set a default engagement type
     }
   });
   
@@ -82,59 +93,24 @@ const NewInvoice = () => {
   const watchReverseCalculation = watch('reverse_calculation');
   const watchNotes = watch('notes');
   
-  // Calculate invoice totals based on all form fields
+  // Calculate invoice totals based on engagement type
   const calculateTotals = useCallback(() => {
-    const items = watchItems || [];
-    
-    // Calculate subtotal based on engagement type
-    let calculatedSubtotal = 0;
-    
-    if (watchEngagementType === 'milestone' && watchMilestones.length > 0) {
-      // For milestone: sum of all milestone amounts
-      calculatedSubtotal = watchMilestones.reduce((sum, milestone) => {
-        const amount = parseFloat(milestone.amount?.toString() || '0') || 0;
-        return sum + amount;
-      }, 0);
-    } else if ((watchEngagementType === 'retainership' || watchEngagementType === 'project') && items.length > 0) {
-      // For retainership or project: use the single item amount
-      const amount = parseFloat(items[0]?.amount?.toString() || '0') || 0;
-      calculatedSubtotal = amount;
-    } else {
-      // For service or other types: sum of all line items
-      calculatedSubtotal = items.reduce((sum, item) => {
-        const amount = parseFloat(item.amount?.toString() || '0') || 0;
-        return sum + amount;
-      }, 0);
+    try {
+      const formData = getValues();
+      const results = calculateInvoiceTotals(formData, watchEngagementType);
+      
+      // Update state with calculated values
+      setSubtotal(results.subtotal);
+      setTax(results.tax);
+      setTotal(results.total);
+    } catch (error) {
+      console.error('Error calculating totals:', error);
+      // Fallback to zero values in case of calculation error
+      setSubtotal(0);
+      setTax(0);
+      setTotal(0);
     }
-    
-    // Calculate tax and total
-    const taxRate = parseFloat(watchTaxPercentage?.toString() || '0') || 0;
-    let calculatedTax = 0;
-    let calculatedTotal = 0;
-    
-    if (watchReverseCalculation) {
-      // Reverse calculation (to get the desired net amount)
-      // If we want the freelancer to receive exactly X amount
-      // and the tax is Y%, then the invoice amount should be X/(1-Y/100)
-      const taxFactor = 1 - (taxRate / 100);
-      if (taxFactor > 0 && taxRate > 0) {
-        calculatedTotal = calculatedSubtotal / taxFactor;
-        calculatedTax = calculatedTotal - calculatedSubtotal;
-      } else {
-        calculatedTotal = calculatedSubtotal;
-        calculatedTax = 0;
-      }
-    } else {
-      // Forward calculation
-      calculatedTax = calculatedSubtotal * (taxRate / 100);
-      calculatedTotal = calculatedSubtotal + calculatedTax;
-    }
-    
-    // Round to 2 decimal places for display consistency
-    setSubtotal(Math.round(calculatedSubtotal * 100) / 100);
-    setTax(Math.round(calculatedTax * 100) / 100);
-    setTotal(Math.round(calculatedTotal * 100) / 100);
-  }, [watchItems, watchEngagementType, watchMilestones, watchTaxPercentage, watchReverseCalculation]);
+  }, [getValues, watchEngagementType]);
   
   // Update item amount when quantity or rate changes
   const updateItemAmount = useCallback((index: number, quantity: number, rate: number) => {
@@ -164,6 +140,7 @@ const NewInvoice = () => {
   // Update project amount
   const updateProjectAmount = useCallback((amount: number) => {
     setValue('items.0.amount', amount);
+    setValue('items.0.quantity', 1);
     
     // Recalculate totals immediately after updating the amount
     setTimeout(() => calculateTotals(), 0);
@@ -183,26 +160,44 @@ const NewInvoice = () => {
     if (watchCurrency !== selectedCurrency) {
       setSelectedCurrency(watchCurrency);
     }
-  }, [watchCurrency, selectedCurrency, watchEngagementType, watchTaxPercentage, watchReverseCalculation, calculateTotals]);
+  }, [
+    watchCurrency, 
+    selectedCurrency, 
+    watchEngagementType, 
+    watchTaxPercentage, 
+    watchReverseCalculation, 
+    calculateTotals
+  ]);
   
   // Watch items changes specifically to update amounts
   useEffect(() => {
     if (watchItems && watchItems.length > 0) {
+      let updateNeeded = false;
+      
       const updatedItems = watchItems.map((item, index) => {
         if (item) {
           const quantity = parseFloat(item.quantity?.toString() || '0') || 0;
           const rate = parseFloat(item.rate?.toString() || '0') || 0;
+          const currentAmount = parseFloat(item.amount?.toString() || '0') || 0;
           const calculatedAmount = quantity * rate;
           
-          if (calculatedAmount !== parseFloat(item.amount?.toString() || '0')) {
+          // Check if we need to update the amount
+          if (Math.abs(calculatedAmount - currentAmount) > 0.001) { // Using an epsilon for float comparison
+            updateNeeded = true;
+            
+            // Update this specific item
             setTimeout(() => {
               setValue(`items.${index}.amount`, calculatedAmount);
-              calculateTotals();
             }, 0);
           }
         }
         return item;
       });
+      
+      // Only recalculate totals if any amounts were updated
+      if (updateNeeded) {
+        setTimeout(() => calculateTotals(), 10); // A slight delay to ensure all setValue operations have completed
+      }
     }
   }, [watchItems, setValue, calculateTotals]);
   
@@ -213,20 +208,41 @@ const NewInvoice = () => {
     }
   }, [watchMilestones, watchEngagementType, calculateTotals]);
   
-  // Generate invoice number on load
+  // Initialize form on load
   useEffect(() => {
     if (user) {
       const setupForm = async () => {
-        const invoiceNumber = await generateInvoiceNumber(user.id);
-        setValue('invoice_number', invoiceNumber);
+        if (!editMode) {
+          const invoiceNumber = await generateInvoiceNumber(user.id);
+          setValue('invoice_number', invoiceNumber);
+        }
       };
       
       setupForm();
       fetchClients(user.id);
       fetchProfile(user.id);
       fetchBankingInfo(user.id);
+      
+      // If in edit mode, populate form with existing invoice data
+      if (editMode && existingInvoice) {
+        setValue('client_id', existingInvoice.client_id);
+        setValue('invoice_number', existingInvoice.invoice_number);
+        setValue('issue_date', existingInvoice.issue_date);
+        setValue('due_date', existingInvoice.due_date);
+        setValue('notes', existingInvoice.notes);
+        setValue('currency', existingInvoice.currency);
+        setValue('engagement_type', existingInvoice.engagement_type);
+        setValue('tax_percentage', existingInvoice.tax_percentage);
+        setValue('reverse_calculation', existingInvoice.reverse_calculation);
+        
+        if (existingInvoice.engagement_type === 'milestone' && existingInvoice.milestones) {
+          setValue('milestones', existingInvoice.milestones);
+        } else {
+          setValue('items', existingInvoice.items);
+        }
+      }
     }
-  }, [user, generateInvoiceNumber, setValue, fetchClients, fetchProfile, fetchBankingInfo]);
+  }, [user, generateInvoiceNumber, setValue, fetchClients, fetchProfile, fetchBankingInfo, editMode, existingInvoice]);
   
   // Set preselected client if available
   useEffect(() => {
@@ -248,52 +264,64 @@ const NewInvoice = () => {
           setClientEngagementModel(model);
           
           if (model) {
-            setValue('engagement_type', model.type);
+            // We store the client's engagement model but do NOT force it as the selected type
+            // Instead, we'll use it as a suggestion and pre-populate data for the user
             
-            // Pre-populate fields based on engagement type
-            if (model.type === 'retainership' && model.retainer_amount) {
-              // Clear existing items and add a retainer item
-              setValue('items', [{
-                description: 'Monthly Retainer Fee',
-                quantity: 1,
-                rate: model.retainer_amount,
-                amount: model.retainer_amount
-              }]);
-            } else if (model.type === 'project' && model.project_value) {
-              // Clear existing items and add a project item
-              setValue('items', [{
-                description: 'Project Fee',
-                quantity: 1,
-                rate: model.project_value,
-                amount: model.project_value
-              }]);
-            } else if (model.type === 'service' && model.service_rates && model.service_rates.length > 0) {
-              // Keep existing items but set the default rate
+            // Only set engagement_type if it hasn't been set yet (like on initial client selection)
+            const currentEngagementType = getValues('engagement_type');
+            if (!currentEngagementType || currentEngagementType === '') {
+              setValue('engagement_type', model.type);
+            }
+            
+            // Pre-populate fields based on the current engagement type (not the client's default)
+            const selectedEngagementType = getValues('engagement_type');
+            
+            if (selectedEngagementType === 'retainership' && model.retainer_amount) {
+              // Only set retainer item if items are empty or if we just switched to this type
+              if (watchItems.length === 0 || watchItems[0]?.description === '' || watchItems[0]?.rate === 0) {
+                setValue('items', [{
+                  description: 'Monthly Retainer Fee',
+                  quantity: 1,
+                  rate: model.retainer_amount,
+                  amount: model.retainer_amount
+                }]);
+              }
+            } else if (selectedEngagementType === 'project' && model.project_value) {
+              // Only set project item if items are empty or if we just switched to this type
+              if (watchItems.length === 0 || watchItems[0]?.description === '' || watchItems[0]?.rate === 0) {
+                setValue('items', [{
+                  description: 'Project Fee',
+                  quantity: 1,
+                  rate: model.project_value,
+                  amount: model.project_value
+                }]);
+              }
+            } else if (selectedEngagementType === 'service' && model.service_rates && model.service_rates.length > 0) {
+              // If service type - get default rate from engagement model
               const defaultRate = model.service_rates[0].rate;
-              const items = watchItems.map(item => ({
-                ...item,
-                rate: item.rate || defaultRate,
-                amount: item.quantity * (item.rate || defaultRate)
-              }));
-              setValue('items', items);
+              
+              // Only update rates if they're 0 or empty to avoid overriding user input
+              if (watchItems.some(item => !item.rate)) {
+                const items = watchItems.map(item => ({
+                  ...item,
+                  rate: item.rate || defaultRate,
+                  amount: item.quantity * (item.rate || defaultRate)
+                }));
+                setValue('items', items);
+              }
             }
             
             // Calculate totals after setting values
             setTimeout(() => calculateTotals(), 0);
-          } else {
-            // Set default engagement type if no model exists
-            setValue('engagement_type', 'service');
           }
         } catch (error) {
           console.error("Error fetching client details:", error);
-          // Set default engagement type in case of error
-          setValue('engagement_type', 'service');
         }
       };
       
       loadClientInfo();
     }
-  }, [watchClientId, fetchEngagementModel, getClient, setValue, watchItems, calculateTotals]);
+  }, [watchClientId, fetchEngagementModel, getClient, setValue, getValues, watchItems, calculateTotals]);
   
   // Update form fields when engagement type changes
   useEffect(() => {
@@ -344,7 +372,7 @@ const NewInvoice = () => {
   
   // Prepare preview data when opening the preview modal
   const preparePreviewData = (): InvoicePreviewData => {
-    return {
+    const data = {
       issuer: {
         business_name: profile?.business_name || 'Your Business',
         address: profile?.address || '',
@@ -385,6 +413,8 @@ const NewInvoice = () => {
         milestones: watchEngagementType === 'milestone' ? watchMilestones : undefined
       }
     };
+    
+    return normalizeInvoiceData(data);
   };
   
   const handleOpenPreview = () => {
@@ -402,12 +432,34 @@ const NewInvoice = () => {
     setIsSavingFromPreview(false);
     setPreviewOpen(false);
   };
+
+  const handleSendEmail = async () => {
+    setIsSendingEmail(true);
+    try {
+      // Save the invoice first if it's not already saved
+      const savedInvoiceId = await handleSave();
+      
+      // For now, we'll just show a toast message since we haven't implemented the actual email sending
+      if (selectedClient?.email) {
+        toast.success(`Invoice would be sent to ${selectedClient.email}`);
+        // In a real implementation, you would call an API endpoint to send the email
+      } else {
+        toast.error('Client email address is missing');
+      }
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      toast.error('Failed to send invoice');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
   
-  const handleSave = async () => {
+  // Main save function
+  const handleSave = async (): Promise<string | undefined> => {
     if (!user) return;
     
     try {
-      // Ensure we have the latest calculations
+      // Final calculation of totals to ensure accuracy
       calculateTotals();
       
       // Prepare invoice data
@@ -430,7 +482,7 @@ const NewInvoice = () => {
         reverse_calculation: formValues.reverse_calculation
       };
       
-      // Prepare invoice items - this will depend on the engagement type
+      // Prepare invoice items based on engagement type
       let invoiceItems = [];
       
       if (formValues.engagement_type === 'milestone' && formValues.milestones) {
@@ -442,13 +494,21 @@ const NewInvoice = () => {
           amount: parseFloat(milestone.amount?.toString() || '0'),
           milestone_name: milestone.name
         }));
+      } else if (formValues.engagement_type === 'project' || formValues.engagement_type === 'retainership') {
+        // For project or retainership, use the single item
+        invoiceItems = [{
+          description: formValues.items[0].description || (formValues.engagement_type === 'project' ? 'Project Fee' : 'Monthly Retainer Fee'),
+          quantity: 1,
+          rate: parseFloat(formValues.items[0].rate?.toString() || '0'),
+          amount: parseFloat(formValues.items[0].amount?.toString() || subtotal)
+        }];
       } else {
-        // For other types, use the items from the form
+        // For service-based or other types, use all line items
         invoiceItems = formValues.items.map(item => ({
           description: item.description,
           quantity: item.quantity,
           rate: item.rate,
-          amount: item.amount
+          amount: item.amount || (item.quantity * item.rate)
         }));
       }
       
@@ -457,7 +517,7 @@ const NewInvoice = () => {
       
       if (result) {
         toast.success('Invoice created successfully');
-        navigate(`/invoices/${result.id}`);
+        return result.id;
       }
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -467,6 +527,7 @@ const NewInvoice = () => {
   
   const onSubmit = handleSave;
   
+  // Add item function for service items
   const addItem = () => {
     append({ description: '', quantity: 1, rate: 0, amount: 0 });
     
@@ -474,6 +535,7 @@ const NewInvoice = () => {
     setTimeout(() => calculateTotals(), 0);
   };
   
+  // Remove item function for service items
   const removeItem = (index: number) => {
     if (fields.length > 1) {
       remove(index);
@@ -485,6 +547,7 @@ const NewInvoice = () => {
     }
   };
   
+  // Add milestone function
   const addMilestone = () => {
     appendMilestone({ name: `Milestone ${milestoneFields.length + 1}`, amount: 0 });
     
@@ -492,6 +555,7 @@ const NewInvoice = () => {
     setTimeout(() => calculateTotals(), 0);
   };
   
+  // Remove milestone function
   const removeMilestone = (index: number) => {
     if (milestoneFields.length > 1) {
       removeMilestoneField(index);
@@ -504,62 +568,63 @@ const NewInvoice = () => {
   };
   
   // Render different item sections based on engagement type
-  const renderItemsSection = () => {
-    if (watchEngagementType === 'milestone') {
-      return (
-        <MilestoneItems
-          register={register}
-          control={control}
-          milestoneFields={milestoneFields}
-          watchCurrency={watchCurrency}
-          milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
-          addMilestone={addMilestone}
-          removeMilestone={removeMilestone}
-          updateMilestoneAmount={updateMilestoneAmount}
-        />
-      );
-    } else if (watchEngagementType === 'retainership') {
-      return (
-        <RetainershipItem
-          register={register}
-          control={control}
-          watchCurrency={watchCurrency}
-          watchItems={watchItems}
-          updateRetainershipAmount={updateRetainershipAmount}
-        />
-      );
-    } else if (watchEngagementType === 'project') {
-      return (
-        <ProjectItem
-          register={register}
-          control={control}
-          watchCurrency={watchCurrency}
-          watchItems={watchItems}
-          updateProjectAmount={updateProjectAmount}
-        />
-      );
-    } else {
-      // Default service-based or others: line items with quantity and rate
-      return (
-        <ServiceItems
-          register={register}
-          control={control}
-          errors={errors}
-          fields={fields}
-          watchItems={watchItems}
-          selectedCurrency={selectedCurrency}
-          itemsFieldArray={{ fields, append, remove }}
-          addItem={addItem}
-          removeItem={removeItem}
-          updateItemAmount={updateItemAmount}
-        />
-      );
+  const renderEngagementTypeForm = () => {
+    switch (watchEngagementType) {
+      case 'milestone':
+        return (
+          <MilestoneItems
+            register={register}
+            control={control}
+            milestoneFields={milestoneFields}
+            watchCurrency={watchCurrency}
+            milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
+            addMilestone={addMilestone}
+            removeMilestone={removeMilestone}
+            updateMilestoneAmount={updateMilestoneAmount}
+          />
+        );
+      case 'retainership':
+        return (
+          <RetainershipItem
+            register={register}
+            control={control}
+            watchCurrency={watchCurrency}
+            watchItems={watchItems}
+            updateRetainershipAmount={updateRetainershipAmount}
+          />
+        );
+      case 'project':
+        return (
+          <ProjectItem
+            register={register}
+            control={control}
+            watchCurrency={watchCurrency}
+            watchItems={watchItems}
+            updateProjectAmount={updateProjectAmount}
+          />
+        );
+      case 'service':
+      default:
+        return (
+          <ServiceItems
+            register={register}
+            control={control}
+            errors={errors}
+            fields={fields}
+            watchItems={watchItems}
+            selectedCurrency={selectedCurrency}
+            itemsFieldArray={{ fields, append, remove }}
+            addItem={addItem}
+            removeItem={removeItem}
+            updateItemAmount={updateItemAmount}
+          />
+        );
     }
   };
   
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-0">
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
         <div className="flex items-center">
           <button
             type="button"
@@ -568,12 +633,14 @@ const NewInvoice = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Invoice</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+            {editMode ? 'Edit Invoice' : 'Create New Invoice'}
+          </h1>
         </div>
       </div>
       
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-4 sm:mb-6">
           {/* Invoice Header */}
           <InvoiceHeader
             register={register}
@@ -584,7 +651,7 @@ const NewInvoice = () => {
           />
           
           {/* Dynamic Item Sections */}
-          {renderItemsSection()}
+          {renderEngagementTypeForm()}
           
           {/* Tax Settings */}
           <TaxSettings 
@@ -615,15 +682,21 @@ const NewInvoice = () => {
         />
       </form>
       
-      {/* Invoice Preview Modal */}
+      {/* Invoice Preview Modal (lazy loaded) */}
       {previewOpen && previewData && (
-        <InvoicePreviewModal
-          isOpen={previewOpen}
-          onClose={handleClosePreview}
-          data={previewData}
-          onSave={handleSaveFromPreview}
-          isSaving={isSavingFromPreview || loading}
-        />
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>}>
+          <InvoicePreviewModal
+            isOpen={previewOpen}
+            onClose={handleClosePreview}
+            data={previewData}
+            onSave={handleSaveFromPreview}
+            onSend={handleSendEmail}
+            isSaving={isSavingFromPreview || loading}
+            isUpdate={editMode}
+          />
+        </Suspense>
       )}
     </div>
   );

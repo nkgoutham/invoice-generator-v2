@@ -7,14 +7,14 @@ interface InvoiceNotesProps {
 
 const InvoiceNotes: React.FC<InvoiceNotesProps> = ({ register }) => {
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
         Notes
       </label>
       <textarea
         id="notes"
         rows={3}
-        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"
         placeholder="Any additional notes for the client..."
         {...register('notes')}
       ></textarea>

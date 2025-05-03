@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useInvoiceStore } from '../../store/invoiceStore';
@@ -25,6 +25,10 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate, engagementTypes } from '../../utils/helpers';
 import RecordPaymentModal from '../../components/invoices/RecordPaymentModal';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { InvoicePreviewData } from '../../types/invoice';
+import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 
 const InvoiceDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +49,9 @@ const InvoiceDetails = () => {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [invoiceRef, setInvoiceRef] = useState<HTMLDivElement | null>(null);
+  const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -67,6 +74,68 @@ const InvoiceDetails = () => {
       fetchProfile(selectedInvoice.user_id);
     }
   }, [selectedInvoice, fetchProfile]);
+
+  // Prepare preview data for PDF generation
+  useEffect(() => {
+    if (selectedInvoice && profile && invoiceItems) {
+      // @ts-ignore - client data is nested in the response
+      const client = selectedInvoice.clients || {};
+      
+      const data: Partial<InvoicePreviewData> = {
+        issuer: {
+          business_name: profile.business_name || 'Your Business',
+          address: profile.address || '',
+          pan_number: profile.pan_number,
+          phone: profile.phone,
+          logo_url: profile.logo_url,
+          primary_color: profile.primary_color,
+          secondary_color: profile.secondary_color,
+          footer_text: profile.footer_text
+        },
+        client: {
+          name: client.name || '',
+          company_name: client.company_name,
+          billing_address: client.billing_address,
+          email: client.email,
+          phone: client.phone,
+          gst_number: client.gst_number
+        },
+        invoice: {
+          invoice_number: selectedInvoice.invoice_number,
+          issue_date: selectedInvoice.issue_date,
+          due_date: selectedInvoice.due_date,
+          subtotal: selectedInvoice.subtotal,
+          tax: selectedInvoice.tax,
+          total: selectedInvoice.total,
+          notes: selectedInvoice.notes,
+          currency: selectedInvoice.currency || 'INR',
+          tax_percentage: selectedInvoice.tax_percentage || 0,
+          engagement_type: selectedInvoice.engagement_type,
+          status: selectedInvoice.status,
+          payment_date: selectedInvoice.payment_date,
+          payment_method: selectedInvoice.payment_method,
+          payment_reference: selectedInvoice.payment_reference,
+          is_partially_paid: selectedInvoice.is_partially_paid,
+          partially_paid_amount: selectedInvoice.partially_paid_amount
+        }
+      };
+
+      // Handle items based on engagement type
+      if (selectedInvoice.engagement_type === 'milestone') {
+        // For milestone-based, create milestone entries
+        data.invoice!.milestones = invoiceItems.map(item => ({
+          name: item.description || item.milestone_name || 'Milestone',
+          amount: item.amount
+        }));
+      } else {
+        // For other types, use the invoiceItems directly
+        data.invoice!.items = invoiceItems;
+      }
+
+      // Normalize data to ensure all required fields are present
+      setPreviewData(normalizeInvoiceData(data));
+    }
+  }, [selectedInvoice, profile, invoiceItems]);
   
   const handleStatusChange = async (status: string) => {
     if (!id) return;
@@ -108,6 +177,90 @@ const InvoiceDetails = () => {
       console.error('Error recording payment:', error);
       toast.error('Failed to record payment');
     }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef) {
+      toast.error('Cannot generate PDF at this time');
+      return;
+    }
+    
+    setIsPrinting(true);
+    
+    try {
+      // Create a clone of the invoice element to apply PDF-specific styling
+      const invoiceClone = invoiceRef.cloneNode(true) as HTMLElement;
+      invoiceClone.classList.add('pdf-mode');
+      
+      // Temporarily append to the document but hide it
+      invoiceClone.style.position = 'absolute';
+      invoiceClone.style.left = '-9999px';
+      invoiceClone.style.width = '1024px'; // Force desktop width
+      document.body.appendChild(invoiceClone);
+      
+      const canvas = await html2canvas(invoiceClone, {
+        scale: 1.5, // Higher quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        windowWidth: 1200, // Force desktop-like rendering
+        width: 1024 // Fixed width to ensure desktop layout
+      });
+      
+      // Remove the clone after canvas generation
+      document.body.removeChild(invoiceClone);
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with compression
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true // Enable compression
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Invoice-${selectedInvoice?.invoice_number}.pdf`);
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handleSendInvoice = () => {
+    // @ts-ignore - client data is nested in the response
+    const clientEmail = selectedInvoice?.clients?.email;
+    
+    if (!clientEmail) {
+      toast.error('Client email address is missing');
+      return;
+    }
+
+    toast.success(`Invoice would be sent to ${clientEmail}`);
+    // In a real implementation, you would call an API endpoint to send the email
+  };
+
+  const handleEdit = () => {
+    navigate('/invoices/new', { 
+      state: { 
+        isEditing: true,
+        invoice: {
+          ...selectedInvoice,
+          items: invoiceItems,
+          milestones: selectedInvoice.engagement_type === 'milestone' ? 
+            invoiceItems.map(item => ({ 
+              name: item.description || item.milestone_name || '', 
+              amount: item.amount 
+            })) : undefined
+        }
+      } 
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -157,8 +310,8 @@ const InvoiceDetails = () => {
   };
   
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3 mb-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-0" ref={(ref) => setInvoiceRef(ref)}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3 mb-4 sm:mb-6">
         <div className="flex items-center">
           <Link
             to="/invoices"
@@ -177,7 +330,7 @@ const InvoiceDetails = () => {
         </div>
       </div>
       
-      <div className="bg-white shadow rounded-lg overflow-hidden mb-6">
+      <div className="bg-white shadow rounded-lg overflow-hidden mb-4 sm:mb-6">
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex flex-col lg:flex-row lg:justify-between gap-6">
             <div>
@@ -318,37 +471,74 @@ const InvoiceDetails = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Quantity
-                    </th>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rate
-                    </th>
-                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
+                    {selectedInvoice.engagement_type === 'milestone' ? (
+                      <>
+                        <th scope="col" className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Milestone
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th scope="col" className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Qty
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Rate
+                        </th>
+                        <th scope="col" className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {invoiceItems.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.description}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
-                        {item.quantity}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
-                        {formatCurrency(item.rate, selectedInvoice.currency)}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 font-medium">
-                        {formatCurrency(item.amount, selectedInvoice.currency)}
+                  {invoiceItems.length > 0 ? (
+                    selectedInvoice.engagement_type === 'milestone' ? (
+                      invoiceItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                            {item.description || item.milestone_name || 'Milestone'}
+                          </td>
+                          <td className="px-3 sm:px-6 py-4 text-right text-sm text-gray-900 font-medium whitespace-nowrap">
+                            {formatCurrency(item.amount, selectedInvoice.currency)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      invoiceItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="px-3 sm:px-6 py-4 text-sm text-gray-900">
+                            {item.description}
+                          </td>
+                          <td className="px-3 sm:px-6 py-4 text-right text-sm text-gray-700 whitespace-nowrap">
+                            {item.quantity}
+                          </td>
+                          <td className="px-3 sm:px-6 py-4 text-right text-sm text-gray-700 whitespace-nowrap">
+                            {formatCurrency(item.rate, selectedInvoice.currency)}
+                          </td>
+                          <td className="px-3 sm:px-6 py-4 text-right text-sm text-gray-900 font-medium whitespace-nowrap">
+                            {formatCurrency(item.amount, selectedInvoice.currency)}
+                          </td>
+                        </tr>
+                      ))
+                    )
+                  ) : (
+                    <tr>
+                      <td 
+                        colSpan={selectedInvoice.engagement_type === 'milestone' ? 2 : 4} 
+                        className="px-3 sm:px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        No items found for this invoice
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -381,81 +571,73 @@ const InvoiceDetails = () => {
           </div>
         )}
         
-        <div className="p-4 sm:p-6 flex flex-col gap-3">
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={`/invoices/${id}/preview`}
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Eye className="mr-1.5 h-4 w-4" />
-              View Invoice
-            </Link>
-            
+        <div className="p-4 sm:p-6 flex flex-wrap gap-2">
+          <Link
+            to={`/invoices/${id}/preview`}
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Eye className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">View Invoice</span>
+          </Link>
+          
+          <button
+            type="button"
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={handleDownloadPDF}
+            disabled={isPrinting}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">{isPrinting ? 'Generating...' : 'Download PDF'}</span>
+          </button>
+          
+          <button
+            type="button"
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={handleSendInvoice}
+          >
+            <Send className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">Send</span>
+          </button>
+          
+          {/* Show Record Payment button for sent, overdue, or partially_paid invoices */}
+          {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue' || selectedInvoice.status === 'partially_paid') && (
             <button
               type="button"
               className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              onClick={() => {
-                toast.error('Download functionality not implemented yet');
-              }}
+              onClick={() => setShowPaymentModal(true)}
             >
-              <Download className="mr-1.5 h-4 w-4" />
-              Download
+              <CreditCardIcon className="mr-1.5 h-4 w-4" />
+              <span className="hidden xs:inline">{selectedInvoice.status === 'partially_paid' ? 'Update Payment' : 'Record Payment'}</span>
             </button>
-            
+          )}
+          
+          {selectedInvoice.status === 'draft' && (
             <button
               type="button"
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              onClick={() => {
-                toast.error('Email functionality not implemented yet');
-              }}
+              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              onClick={() => handleStatusChange('sent')}
             >
               <Send className="mr-1.5 h-4 w-4" />
-              Send to Client
+              <span className="hidden xs:inline">Mark as Sent</span>
             </button>
-          </div>
+          )}
           
-          <div className="flex flex-wrap gap-2 mt-2">
-            {/* Show Record Payment button for sent, overdue, or partially_paid invoices */}
-            {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue' || selectedInvoice.status === 'partially_paid') && (
-              <button
-                type="button"
-                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                onClick={() => setShowPaymentModal(true)}
-              >
-                <CreditCardIcon className="mr-1.5 h-4 w-4" />
-                {selectedInvoice.status === 'partially_paid' ? 'Update Payment' : 'Record Payment'}
-              </button>
-            )}
-            
-            {selectedInvoice.status === 'draft' && (
-              <button
-                type="button"
-                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                onClick={() => handleStatusChange('sent')}
-              >
-                <Send className="mr-1.5 h-4 w-4" />
-                Mark as Sent
-              </button>
-            )}
-            
-            <button
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              onClick={() => navigate(`/invoices/edit/${id}`)}
-            >
-              <Edit className="mr-1.5 h-4 w-4" />
-              Edit
-            </button>
-            
-            <button
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              onClick={handleDelete}
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" />
-              Delete
-            </button>
-          </div>
+          <button
+            onClick={handleEdit}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Edit className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">Edit</span>
+          </button>
+          
+          <button
+            type="button"
+            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            onClick={handleDelete}
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">Delete</span>
+          </button>
         </div>
       </div>
 

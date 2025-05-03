@@ -18,10 +18,10 @@ const RetainershipItem: React.FC<RetainershipItemProps> = ({
   const currencySymbol = watchCurrency === 'USD' ? '$' : '₹';
 
   return (
-    <div className="p-6 border-b border-gray-200">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Retainer Details</h2>
+    <div className="p-4 sm:p-6 border-b border-gray-200">
+      <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Retainer Details</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
         <div>
           <label htmlFor="retainer_period" className="block text-sm font-medium text-gray-700 mb-1">
             Billing Period
@@ -59,7 +59,11 @@ const RetainershipItem: React.FC<RetainershipItemProps> = ({
                     field.onChange(value);
                     updateRetainershipAmount(value);
                   }}
-                  onBlur={field.onBlur}
+                  onBlur={(e) => {
+                    field.onBlur();
+                    const value = parseFloat(e.target.value) || 0;
+                    updateRetainershipAmount(value);
+                  }}
                 />
               )}
             />
@@ -67,7 +71,7 @@ const RetainershipItem: React.FC<RetainershipItemProps> = ({
           <input type="hidden" {...register('items.0.quantity')} value="1" />
         </div>
         
-        <div className="col-span-2">
+        <div className="col-span-1 sm:col-span-2">
           <label htmlFor="items.0.description" className="block text-sm font-medium text-gray-700 mb-1">
             Description
           </label>
@@ -75,6 +79,7 @@ const RetainershipItem: React.FC<RetainershipItemProps> = ({
             type="text"
             id="items.0.description"
             className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            defaultValue="Monthly Retainer Fee"
             {...register('items.0.description', { required: 'Description is required' })}
           />
         </div>

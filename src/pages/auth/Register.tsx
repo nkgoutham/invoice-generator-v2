@@ -30,7 +30,7 @@ const Register = () => {
   };
   
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-50 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="flex justify-center">
           <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-secondary-500 flex items-center justify-center shadow-lg transform transition-transform hover:scale-105 duration-300">
@@ -49,7 +49,7 @@ const Register = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="card px-6 py-8 sm:px-10">
+        <div className="card px-4 py-6 sm:px-10 sm:py-8">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center animate-fade-in">
               <svg className="h-5 w-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -178,7 +178,7 @@ const Register = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn btn-primary btn-md w-full group"
+                className="w-full btn btn-primary btn-md group"
               >
                 {loading ? (
                   <span className="flex items-center justify-center">

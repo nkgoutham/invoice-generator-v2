@@ -57,7 +57,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       
       const { data, error } = await supabase
         .from('invoices')
-        .select('*, clients(name, company_name, billing_address, email, phone)')
+        .select('*, clients(name, company_name, billing_address, email, phone, gst_number)')
         .eq('id', invoiceId)
         .single();
       
@@ -96,18 +96,66 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      // Start a transaction using supabase
-      const { data, error } = await supabase
+      // Check if this invoice number already exists for this user
+      const { data: existingInvoice, error: checkError } = await supabase
         .from('invoices')
-        .insert([invoice])
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', invoice.user_id)
+        .eq('invoice_number', invoice.invoice_number)
+        .maybeSingle();
       
-      if (error) throw error;
+      if (checkError) throw checkError;
       
-      const createdInvoice = data as Invoice;
+      let createdInvoice: Invoice;
       
-      // Add items with the new invoice ID
+      if (existingInvoice) {
+        // Update existing invoice instead of creating a new one
+        const { data: updatedInvoice, error: updateError } = await supabase
+          .from('invoices')
+          .update({
+            client_id: invoice.client_id,
+            issue_date: invoice.issue_date,
+            due_date: invoice.due_date,
+            status: invoice.status,
+            subtotal: invoice.subtotal,
+            tax: invoice.tax,
+            total: invoice.total,
+            notes: invoice.notes,
+            currency: invoice.currency,
+            engagement_type: invoice.engagement_type,
+            tax_percentage: invoice.tax_percentage,
+            reverse_calculation: invoice.reverse_calculation
+          })
+          .eq('id', existingInvoice.id)
+          .select()
+          .single();
+        
+        if (updateError) throw updateError;
+        
+        createdInvoice = updatedInvoice as Invoice;
+        
+        // Delete existing items
+        const { error: deleteError } = await supabase
+          .from('invoice_items')
+          .delete()
+          .eq('invoice_id', existingInvoice.id);
+        
+        if (deleteError) throw deleteError;
+        
+      } else {
+        // Create new invoice
+        const { data: newInvoice, error: createError } = await supabase
+          .from('invoices')
+          .insert([invoice])
+          .select()
+          .single();
+        
+        if (createError) throw createError;
+        
+        createdInvoice = newInvoice as Invoice;
+      }
+      
+      // Add items with the invoice ID
       if (items.length > 0) {
         const itemsWithInvoiceId = items.map(item => ({
           ...item,
@@ -121,10 +169,18 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         if (itemsError) throw itemsError;
       }
       
-      set((state) => ({ 
-        invoices: [createdInvoice, ...state.invoices],
-        selectedInvoice: createdInvoice 
-      }));
+      // Update the invoices list in state
+      set((state) => {
+        // Remove the existing invoice from the list if it was updated
+        const filteredInvoices = existingInvoice 
+          ? state.invoices.filter(inv => inv.id !== existingInvoice.id)
+          : state.invoices;
+          
+        return { 
+          invoices: [createdInvoice, ...filteredInvoices],
+          selectedInvoice: createdInvoice 
+        };
+      });
       
       return createdInvoice;
     } catch (error: any) {

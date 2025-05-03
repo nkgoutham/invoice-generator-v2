@@ -107,14 +107,14 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Record Payment" size="md">
-      <form onSubmit={handleSubmit} className="p-6">
-        <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Payment Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Payment Status
             </label>
-            <div className="mt-1 flex items-center space-x-3">
+            <div className="mt-1 flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <div className="flex items-center">
                 <input
                   id="full_payment"
@@ -180,7 +180,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                   placeholder="0.00"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
-                  <span className="text-gray-500 pr-3 text-sm">
+                  <span className="text-gray-500 pr-3 text-xs sm:text-sm">
                     of {formatCurrency(invoice.total, invoice.currency)}
                   </span>
                 </div>
@@ -252,18 +252,18 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
           </div>
         </div>
         
-        <div className="mt-6 flex justify-end space-x-3">
+        <div className="mt-6 flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
+            className="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
           >
             {isSubmitting ? 'Saving...' : 'Record Payment'}
           </button>

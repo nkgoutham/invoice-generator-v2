@@ -1,17 +1,20 @@
 import { useEffect, useState, useRef } from 'react';
-import { Download, Printer, Save } from 'lucide-react';
+import { Download, Printer, Save, Send } from 'lucide-react';
 import Modal from '../ui/Modal';
 import InvoicePreviewContent from './InvoicePreviewContent';
 import { InvoicePreviewData } from '../../types/invoice';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import toast from 'react-hot-toast';
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: InvoicePreviewData;
   onSave: () => Promise<void>;
+  onSend?: () => Promise<void>;
   isSaving: boolean;
+  isUpdate?: boolean;
 }
 
 const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
@@ -19,9 +22,13 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   onClose,
   data,
   onSave,
-  isSaving
+  onSend,
+  isSaving,
+  isUpdate = false
 }) => {
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const invoiceRef = useRef<HTMLDivElement>(null);
   
@@ -37,7 +44,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) return;
     
-    setIsPrinting(true);
+    setIsDownloading(true);
     
     try {
       // Create a clone of the invoice element to apply PDF-specific styling without affecting the visible element
@@ -51,7 +58,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       document.body.appendChild(invoiceClone);
       
       const canvas = await html2canvas(invoiceClone, {
-        scale: 1.5, // Lower scale for better compression
+        scale: 1.5, // Higher quality
         logging: false,
         useCORS: true,
         allowTaint: true,
@@ -63,7 +70,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       // Remove the clone after canvas generation
       document.body.removeChild(invoiceClone);
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with compression
+      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with compression
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -76,15 +83,28 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       
       pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
       pdf.save(`Invoice-${data.invoice.invoice_number}.pdf`);
+      toast.success('PDF downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
     } finally {
-      setIsPrinting(false);
+      setIsDownloading(false);
     }
   };
   
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleSendEmail = async () => {
+    if (!onSend) return;
+
+    setIsSending(true);
+    try {
+      await onSend();
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -106,20 +126,31 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
             <button
               type="button"
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              onClick={handlePrint}
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
             >
-              <Printer size={16} className="mr-1.5" />
-              {!isMobile && "Print"}
+              <Download size={16} className="mr-1.5" />
+              <span className="hidden xs:inline">{isDownloading ? "Generating..." : "Download PDF"}</span>
             </button>
             <button
               type="button"
-              disabled={isPrinting}
+              onClick={handlePrint}
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              onClick={handleDownloadPDF}
             >
-              <Download size={16} className="mr-1.5" />
-              {!isMobile && (isPrinting ? "Generating..." : "Download PDF")}
+              <Printer size={16} className="mr-1.5" />
+              <span className="hidden xs:inline">Print</span>
             </button>
+            {onSend && (
+              <button
+                type="button"
+                onClick={handleSendEmail}
+                disabled={isSending}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <Send size={16} className="mr-1.5" />
+                <span className="hidden xs:inline">{isSending ? "Sending..." : "Send"}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onSave}
@@ -133,12 +164,12 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               {isSaving ? (
                 <>
                   <span className="mr-1.5 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  {!isMobile && "Saving..."}
+                  <span className="hidden xs:inline">Saving...</span>
                 </>
               ) : (
                 <>
                   <Save size={16} className="mr-1.5" />
-                  {!isMobile && "Save & Close"}
+                  <span className="hidden xs:inline">{isUpdate ? "Update" : "Save"}</span>
                 </>
               )}
             </button>

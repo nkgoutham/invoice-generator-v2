@@ -21,9 +21,9 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
 }) => {
   return (
     <div className="p-4 sm:p-6 border-b border-gray-200">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Invoice Information</h2>
+      <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Invoice Information</h2>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
         {/* Client Selection */}
         <div>
           <label htmlFor="client_id" className="block text-sm font-medium text-gray-700 mb-1">
@@ -89,14 +89,13 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
         {/* Engagement Type */}
         <div>
           <label htmlFor="engagement_type" className="block text-sm font-medium text-gray-700 mb-1">
-            Engagement Type
+            Engagement Type *
           </label>
           <select
             id="engagement_type"
             className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm border-gray-300`}
-            {...register('engagement_type')}
+            {...register('engagement_type', { required: 'Engagement type is required' })}
           >
-            <option value="">Select engagement type</option>
             {engagementTypes.map(type => (
               <option key={type.value} value={type.value}>
                 {type.label}

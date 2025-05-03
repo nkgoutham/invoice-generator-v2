@@ -56,9 +56,9 @@ const BankingInfo = () => {
   }
   
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <div className="bg-white shadow overflow-hidden rounded-lg">
-        <div className="px-4 py-4 sm:px-6 sm:py-5 border-b">
+        <div className="px-4 py-4 sm:px-6 border-b">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
             Banking Information
           </h3>
@@ -75,9 +75,9 @@ const BankingInfo = () => {
         
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6">
               {/* Account Holder */}
-              <div className="sm:col-span-2">
+              <div>
                 <label htmlFor="account_holder" className="block text-sm font-medium text-gray-700">
                   Account Holder Name
                 </label>

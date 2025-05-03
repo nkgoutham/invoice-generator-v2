@@ -101,7 +101,7 @@ const Clients = () => {
         </h1>
         <Link
           to="/clients/new"
-          className="btn btn-primary btn-md"
+          className="w-full sm:w-auto btn btn-primary btn-md"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Client
@@ -117,7 +117,7 @@ const Clients = () => {
       {/* Filters and search */}
       <div className="card mb-6">
         <div className="p-4 border-b border-neutral-200/70">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-4">
             {/* Search */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -125,7 +125,7 @@ const Clients = () => {
               </div>
               <input
                 type="text"
-                className="form-input pl-10"
+                className="form-input pl-10 w-full"
                 placeholder="Search clients..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -138,7 +138,7 @@ const Clients = () => {
                 <Filter className="h-4 w-4 text-neutral-400 group-focus-within:text-accent-500 transition-colors duration-150" />
               </div>
               <select
-                className="form-select pl-10"
+                className="form-select pl-10 w-full"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -149,8 +149,8 @@ const Clients = () => {
               </select>
             </div>
             
-            {/* Client count */}
-            <div className="flex items-center justify-start md:justify-end space-x-4">
+            {/* Client count and refresh button */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center">
                 <Users className="h-5 w-5 text-neutral-400 mr-2" />
                 <span className="text-sm text-neutral-600">
@@ -171,7 +171,7 @@ const Clients = () => {
         </div>
       </div>
       
-      {/* Clients grid */}
+      {/* Clients grid with improved mobile layout */}
       {filteredClients.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredClients.map((client) => (
@@ -180,9 +180,9 @@ const Clients = () => {
               to={`/clients/${client.id}`}
               className="card hover:shadow-hover hover:-translate-y-1 transition-all duration-300 flex flex-col group"
             >
-              <div className="p-5 flex-grow">
+              <div className="p-4 sm:p-5 flex-grow">
                 <div className="flex justify-between items-start">
-                  <h3 className="text-lg font-medium text-neutral-900 truncate max-w-[70%] group-hover:text-accent-600 transition-colors">
+                  <h3 className="text-base sm:text-lg font-medium text-neutral-900 truncate max-w-[70%] group-hover:text-accent-600 transition-colors">
                     {client.name}
                   </h3>
                   <span
@@ -222,7 +222,7 @@ const Clients = () => {
                 )}
               </div>
               
-              <div className="bg-neutral-50 px-5 py-3 mt-auto rounded-b-xl border-t border-neutral-100">
+              <div className="bg-neutral-50 px-4 sm:px-5 py-3 mt-auto rounded-b-xl border-t border-neutral-100">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-neutral-600">
                     Status: <span className="font-medium text-neutral-800">
@@ -239,7 +239,7 @@ const Clients = () => {
           ))}
         </div>
       ) : (
-        <div className="card p-6 text-center animate-fade-in">
+        <div className="card p-5 sm:p-6 text-center animate-fade-in">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400">
               <Users className="h-8 w-8" />

@@ -182,9 +182,9 @@ const Dashboard = () => {
   }
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-neutral-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 to-accent-500">
             Dashboard
           </span>
@@ -192,14 +192,14 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <Link
             to="/invoices/new"
-            className="btn btn-primary btn-md"
+            className="w-full sm:w-auto btn btn-primary btn-md"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             New Invoice
           </Link>
           <Link
             to="/clients/new"
-            className="btn btn-secondary btn-md"
+            className="w-full sm:w-auto btn btn-secondary btn-md"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             New Client
@@ -207,11 +207,11 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {/* Stats grid */}
+      {/* Stats grid - Improved for mobile */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <div key={index} className="card hover:shadow-hover group transition-all duration-300 overflow-hidden">
-            <div className="p-4 sm:p-5">
+            <div className="p-3 sm:p-5">
               <div className="flex items-center">
                 <div className={`flex-shrink-0 rounded-md p-2.5 ${stat.iconBg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
                   {stat.icon}
@@ -239,11 +239,11 @@ const Dashboard = () => {
         ))}
       </div>
       
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
         {/* Recent invoices */}
         <div className="card overflow-hidden">
           <div className="px-4 py-4 sm:px-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <h2 className="text-lg font-medium text-neutral-900 mb-2 sm:mb-0">Recent Invoices</h2>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-900 mb-2 sm:mb-0">Recent Invoices</h2>
             <Link
               to="/invoices"
               className="text-sm font-medium text-accent-500 hover:text-accent-600 inline-flex items-center transition-all duration-200 hover:translate-x-0.5"
@@ -261,7 +261,7 @@ const Dashboard = () => {
                       to={`/invoices/${invoice.id}`}
                       className="block hover:bg-neutral-50 transition-colors duration-200"
                     >
-                      <div className="px-4 py-4 sm:px-6">
+                      <div className="px-4 py-3 sm:px-6 sm:py-4">
                         <div className="flex items-center justify-between flex-wrap gap-y-2">
                           <div className="flex items-center">
                             <div className="transform group-hover:scale-105 transition-transform duration-200">
@@ -323,7 +323,7 @@ const Dashboard = () => {
         {/* Recent activity */}
         <div className="card overflow-hidden">
           <div className="px-4 py-4 sm:px-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <h2 className="text-lg font-medium text-neutral-900 mb-2 sm:mb-0">Recent Payments</h2>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-900 mb-2 sm:mb-0">Recent Payments</h2>
             <Link
               to="/invoices"
               className="text-sm font-medium text-accent-500 hover:text-accent-600 inline-flex items-center transition-all duration-200 hover:translate-x-0.5"
@@ -349,7 +349,7 @@ const Dashboard = () => {
                         to={`/invoices/${invoice.id}`}
                         className="block hover:bg-neutral-50 transition-colors duration-200"
                       >
-                        <div className="px-4 py-4 sm:px-6">
+                        <div className="px-4 py-3 sm:px-6 sm:py-4">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-y-2">
                             <div className="flex items-center mr-2">
                               <div className="mr-2 transform group-hover:scale-105 transition-transform duration-200 text-emerald-500">

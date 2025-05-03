@@ -14,10 +14,10 @@ const TaxSettings: React.FC<TaxSettingsProps> = ({
   updateTaxSettings 
 }) => {
   return (
-    <div className="p-6 border-b border-gray-200">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Tax Settings</h2>
+    <div className="p-4 sm:p-6 border-b border-gray-200">
+      <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Tax Settings</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
         <div>
           <label htmlFor="tax_percentage" className="block text-sm font-medium text-gray-700 mb-1">
             GST / Tax Rate (%)

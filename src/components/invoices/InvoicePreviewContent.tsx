@@ -1,5 +1,6 @@
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { InvoicePreviewData } from '../../types/invoice';
+import { transformInvoiceData } from '../../utils/invoiceDataTransform';
 
 interface InvoicePreviewContentProps {
   data: InvoicePreviewData;
@@ -7,8 +8,11 @@ interface InvoicePreviewContentProps {
 }
 
 const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
-  data
+  data: rawData
 }) => {
+  // Transform data based on engagement type to ensure consistent display
+  const data = transformInvoiceData(rawData);
+  
   const currencySymbol = data.invoice.currency === 'USD' ? '$' : '₹';
   const primaryColor = data.issuer.primary_color || '#3B82F6';
   const secondaryColor = data.issuer.secondary_color || '#0EA5E9';

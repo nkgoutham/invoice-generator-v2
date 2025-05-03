@@ -105,135 +105,139 @@ const NewClient = () => {
   };
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Add New Client</h1>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="col-span-2">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="company_name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Company Name
-                </label>
-                <input
-                  type="text"
-                  id="company_name"
-                  name="company_name"
-                  value={formData.company_name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="contact_person" className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Person
-                </label>
-                <input
-                  type="text"
-                  id="contact_person"
-                  name="contact_person"
-                  value={formData.contact_person}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
-                </label>
-                <input
-                  type="text"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div className="col-span-2">
-                <label htmlFor="billing_address" className="block text-sm font-medium text-gray-700 mb-1">
-                  Billing Address
-                </label>
-                <textarea
-                  id="billing_address"
-                  name="billing_address"
-                  value={formData.billing_address}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="gst_number" className="block text-sm font-medium text-gray-700 mb-1">
-                  GST Number
-                </label>
-                <input
-                  type="text"
-                  id="gst_number"
-                  name="gst_number"
-                  value={formData.gst_number}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <h1 className="text-xl sm:text-2xl font-bold mb-6 text-gray-900">Add New Client</h1>
+      
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+          <div className="space-y-6">
+            {/* Client Information Section */}
+            <div>
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Client Information</h2>
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Client Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="company_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    id="company_name"
+                    name="company_name"
+                    value={formData.company_name}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="contact_person" className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Person
+                  </label>
+                  <input
+                    type="text"
+                    id="contact_person"
+                    name="contact_person"
+                    value={formData.contact_person}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="billing_address" className="block text-sm font-medium text-gray-700 mb-1">
+                    Billing Address
+                  </label>
+                  <textarea
+                    id="billing_address"
+                    name="billing_address"
+                    value={formData.billing_address}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="gst_number" className="block text-sm font-medium text-gray-700 mb-1">
+                    GST Number
+                  </label>
+                  <input
+                    type="text"
+                    id="gst_number"
+                    name="gst_number"
+                    value={formData.gst_number}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Status
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="prospect">Prospect</option>
-                </select>
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                    Client Status
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="prospect">Prospect</option>
+                  </select>
+                </div>
               </div>
             </div>
             
-            {/* Engagement Model Section */}
-            <div className="mt-8">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Engagement Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-2">
+            {/* Engagement Details Section */}
+            <div className="pt-4 border-t border-gray-200">
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Engagement Details</h2>
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <div>
                   <label htmlFor="engagement_type" className="block text-sm font-medium text-gray-700 mb-1">
                     Engagement Type *
                   </label>
@@ -242,7 +246,7 @@ const NewClient = () => {
                     name="engagement_type"
                     value={engagementData.type}
                     onChange={handleEngagementChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
                     {engagementTypes.map(type => (
                       <option key={type.value} value={type.value}>{type.label}</option>
@@ -251,7 +255,7 @@ const NewClient = () => {
                 </div>
 
                 {engagementData.type === 'retainership' && (
-                  <div className="col-span-2">
+                  <div>
                     <label htmlFor="retainer_amount" className="block text-sm font-medium text-gray-700 mb-1">
                       Monthly Retainer Amount
                     </label>
@@ -267,14 +271,14 @@ const NewClient = () => {
                         onChange={handleRateChange}
                         min="0"
                         step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       />
                     </div>
                   </div>
                 )}
 
                 {engagementData.type === 'project' && (
-                  <div className="col-span-2">
+                  <div>
                     <label htmlFor="project_value" className="block text-sm font-medium text-gray-700 mb-1">
                       Project Value
                     </label>
@@ -290,14 +294,14 @@ const NewClient = () => {
                         onChange={handleRateChange}
                         min="0"
                         step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       />
                     </div>
                   </div>
                 )}
 
                 {engagementData.type === 'service' && (
-                  <div className="col-span-2">
+                  <div>
                     <label htmlFor="hourly_rate" className="block text-sm font-medium text-gray-700 mb-1">
                       Hourly Rate
                     </label>
@@ -313,7 +317,7 @@ const NewClient = () => {
                         onChange={handleRateChange}
                         min="0"
                         step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       />
                     </div>
                   </div>
@@ -321,24 +325,24 @@ const NewClient = () => {
               </div>
             </div>
             
-            <div className="mt-8 flex justify-end space-x-4">
+            <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => navigate('/clients')}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70"
+                className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70"
               >
                 {isSubmitting ? 'Saving...' : 'Save Client'}
               </button>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );

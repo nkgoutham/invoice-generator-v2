@@ -220,6 +220,19 @@ button, a {
   }
 }
 
+/* Extra small screens for better responsiveness */
+@media (min-width: 420px) {
+  .xs\:inline {
+    display: inline;
+  }
+  .xs\:inline-block {
+    display: inline-block;
+  }
+  .xs\:hidden {
+    display: none;
+  }
+}
+
 /* PDF and print styles */
 /* PDF Mode - Used when generating PDF from an element */
 .pdf-mode {

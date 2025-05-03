@@ -6,6 +6,7 @@ import { useClientStore } from '../../store/clientStore';
 import { ArrowLeft, Download, Printer, Send, ExternalLink, CreditCard } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import { InvoicePreviewData } from '../../types/invoice';
+import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 import InvoicePreviewContent from '../../components/invoices/InvoicePreviewContent';
 import RecordPaymentModal from '../../components/invoices/RecordPaymentModal';
 import jsPDF from 'jspdf';
@@ -66,7 +67,7 @@ const InvoicePreview = () => {
   // Prepare preview data
   useEffect(() => {
     if (selectedInvoice && profile && client) {
-      const data: InvoicePreviewData = {
+      const data: Partial<InvoicePreviewData> = {
         issuer: {
           business_name: profile.business_name || 'Your Business',
           address: profile.address || '',
@@ -103,10 +104,6 @@ const InvoicePreview = () => {
           currency: selectedInvoice.currency || 'INR',
           tax_percentage: selectedInvoice.tax_percentage || 0,
           engagement_type: selectedInvoice.engagement_type,
-          items: selectedInvoice.engagement_type !== 'milestone' ? invoiceItems : undefined,
-          milestones: selectedInvoice.engagement_type === 'milestone' ? 
-            invoiceItems.map(item => ({ name: item.description || item.milestone_name || '', amount: item.amount })) : 
-            undefined,
           payment_date: selectedInvoice.payment_date,
           payment_method: selectedInvoice.payment_method,
           payment_reference: selectedInvoice.payment_reference,
@@ -116,7 +113,18 @@ const InvoicePreview = () => {
         }
       };
       
-      setPreviewData(data);
+      // Handle items based on engagement type
+      if (selectedInvoice.engagement_type === 'milestone') {
+        data.invoice!.milestones = invoiceItems.map(item => ({
+          name: item.description || item.milestone_name || 'Milestone',
+          amount: item.amount
+        }));
+      } else {
+        data.invoice!.items = invoiceItems;
+      }
+      
+      // Normalize data to ensure all fields are present
+      setPreviewData(normalizeInvoiceData(data));
     }
   }, [selectedInvoice, profile, client, bankingInfo, invoiceItems]);
   
@@ -227,8 +235,8 @@ const InvoicePreview = () => {
   }
   
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="print:hidden mb-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-0">
+      <div className="print:hidden mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3">
           <div className="flex items-center">
             <button
@@ -248,7 +256,7 @@ const InvoicePreview = () => {
               onClick={handlePrint}
             >
               <Printer className="h-4 w-4 inline-block mr-1" />
-              <span className="hidden sm:inline">Print</span>
+              <span className="hidden xs:inline">Print</span>
             </button>
             
             <button
@@ -258,7 +266,7 @@ const InvoicePreview = () => {
               onClick={handleDownloadPDF}
             >
               <Download className="h-4 w-4 inline-block mr-1" />
-              <span className="hidden sm:inline">{isPrinting ? 'Generating...' : 'Download PDF'}</span>
+              <span className="hidden xs:inline">{isPrinting ? 'Generating...' : 'Download PDF'}</span>
             </button>
             
             {selectedInvoice.status === 'draft' && (
@@ -268,7 +276,7 @@ const InvoicePreview = () => {
                 onClick={handleMarkAsSent}
               >
                 <Send className="h-4 w-4 inline-block mr-1" />
-                <span className="hidden sm:inline">Mark as Sent</span>
+                <span className="hidden xs:inline">Mark as Sent</span>
               </button>
             )}
             
@@ -279,7 +287,7 @@ const InvoicePreview = () => {
                 onClick={() => setShowPaymentModal(true)}
               >
                 <CreditCard className="h-4 w-4 inline-block mr-1" />
-                <span className="hidden sm:inline">{selectedInvoice.status === 'partially_paid' ? 'Update Payment' : 'Record Payment'}</span>
+                <span className="hidden xs:inline">{selectedInvoice.status === 'partially_paid' ? 'Update Payment' : 'Record Payment'}</span>
               </button>
             )}
             
@@ -289,7 +297,7 @@ const InvoicePreview = () => {
               onClick={handleSendEmail}
             >
               <ExternalLink className="h-4 w-4 inline-block mr-1" />
-              <span className="hidden sm:inline">Send to Client</span>
+              <span className="hidden xs:inline">Send to Client</span>
             </button>
           </div>
         </div>

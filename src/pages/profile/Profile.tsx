@@ -154,9 +154,9 @@ const Profile = () => {
   }
   
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <div className="bg-white shadow overflow-hidden rounded-lg">
-        <div className="px-4 py-4 sm:px-6 sm:py-5 border-b">
+        <div className="px-4 py-4 sm:px-6 border-b">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
             Profile Settings
           </h3>
@@ -173,7 +173,7 @@ const Profile = () => {
         
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-y-6">
               {/* Logo upload */}
               <div className="sm:col-span-2 flex flex-col items-center">
                 <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-2 relative">
@@ -225,7 +225,7 @@ const Profile = () => {
               </div>
               
               {/* Business Name */}
-              <div className="sm:col-span-2">
+              <div>
                 <label htmlFor="business_name" className="block text-sm font-medium text-gray-700">
                   Business Name
                 </label>
@@ -242,7 +242,7 @@ const Profile = () => {
               </div>
               
               {/* Phone */}
-              <div className="col-span-1">
+              <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Phone Number
                 </label>
@@ -259,7 +259,7 @@ const Profile = () => {
               </div>
               
               {/* PAN Number */}
-              <div className="col-span-1">
+              <div>
                 <label htmlFor="pan_number" className="block text-sm font-medium text-gray-700">
                   PAN Number
                 </label>
@@ -276,14 +276,14 @@ const Profile = () => {
               </div>
               
               {/* Address */}
-              <div className="sm:col-span-2">
+              <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">
                   Address
                 </label>
                 <textarea
                   id="address"
                   rows={3}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${errors.address ? 'border-red-300' : ''}`}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none ${errors.address ? 'border-red-300' : ''}`}
                   placeholder="Your business address"
                   {...register('address')}
                 />
@@ -332,14 +332,14 @@ const Profile = () => {
               </div>
               
               {/* Footer Text */}
-              <div className="sm:col-span-2">
+              <div>
                 <label htmlFor="footer_text" className="block text-sm font-medium text-gray-700">
                   Invoice Footer Text
                 </label>
                 <textarea
                   id="footer_text"
                   rows={2}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"
                   placeholder="Thank you for your business!"
                   {...register('footer_text')}
                 />

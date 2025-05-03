@@ -27,11 +27,11 @@ const MilestoneItems: React.FC<MilestoneItemsProps> = ({
   return (
     <div className="p-4 sm:p-6 border-b border-gray-200">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium text-gray-900">Milestones</h2>
+        <h2 className="text-base sm:text-lg font-medium text-gray-900">Milestones</h2>
         <button
           type="button"
           onClick={addMilestone}
-          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="inline-flex items-center px-2 sm:px-3 py-1 border border-transparent text-xs sm:text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -42,7 +42,7 @@ const MilestoneItems: React.FC<MilestoneItemsProps> = ({
       
       <div className="space-y-4">
         {milestoneFields.map((field, index) => (
-          <div key={field.id} className="flex flex-col sm:flex-row items-start gap-3 p-4 border border-gray-200 rounded-md">
+          <div key={field.id} className="flex flex-col sm:flex-row items-start gap-3 p-3 sm:p-4 border border-gray-200 rounded-md">
             <div className="flex-1 w-full">
               <label htmlFor={`milestones.${index}.name`} className="block text-sm font-medium text-gray-700 mb-1">
                 Milestone Name

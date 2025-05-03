@@ -18,18 +18,18 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
   const currencySymbol = watchCurrency === 'USD' ? '$' : '₹';
 
   return (
-    <div className="p-6 border-b border-gray-200">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Project Details</h2>
+    <div className="p-4 sm:p-6 border-b border-gray-200">
+      <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Project Details</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+        <div className="sm:col-span-2">
           <label htmlFor="project_description" className="block text-sm font-medium text-gray-700 mb-1">
             Project Description
           </label>
           <textarea
             id="project_description"
             rows={2}
-            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"
             placeholder="Brief description of the project"
             {...register('project_description')}
           ></textarea>
@@ -43,6 +43,7 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
             type="text"
             id="items.0.description"
             className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            defaultValue="Project Fee"
             {...register('items.0.description', { required: 'Description is required' })}
           />
           <input type="hidden" {...register('items.0.quantity')} value="1" />
@@ -70,9 +71,15 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
                   onChange={(e) => {
                     const value = parseFloat(e.target.value) || 0;
                     field.onChange(value);
+                    // Always update project amount on rate change
                     updateProjectAmount(value);
                   }}
-                  onBlur={field.onBlur}
+                  onBlur={(e) => {
+                    // Also update on blur to catch any missed changes
+                    field.onBlur();
+                    const value = parseFloat(e.target.value) || 0;
+                    updateProjectAmount(value);
+                  }}
                 />
               )}
             />
