@@ -96,11 +96,6 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, isMobile = false }) => {
             <Menu className="h-5 w-5" />
           </button>
         )}
-        <h1 className={`${isMobile ? 'ml-3' : 'ml-0'} text-lg sm:text-xl font-semibold text-neutral-800 truncate`}>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-500 to-accent-secondary-500">
-            easyinvoice
-          </span>
-        </h1>
       </div>
 
       <div className="flex items-center space-x-3 sm:space-x-5">

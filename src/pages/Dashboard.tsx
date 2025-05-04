@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import CurrencyToggle from '../components/dashboard/CurrencyToggle';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Dashboard stats type
 type DashboardStat = {
@@ -387,7 +387,7 @@ const Dashboard = () => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 shadow-md border border-gray-200 rounded-md">
+        <div className="bg-white p-3 shadow-lg border border-gray-200/80 rounded-lg">
           <p className="font-medium text-sm">{label}</p>
           <p className="text-accent-600 text-sm font-medium">
             {formatCurrency(payload[0].value, currencySettings?.preferred_currency || 'INR')}
@@ -490,14 +490,14 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <div className="h-60">
+        <div className="h-60 w-full">
           {revenueData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={revenueData}
-                margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
+                margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" opacity={0.5} />
                 <XAxis 
                   dataKey="name" 
                   tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -516,8 +516,8 @@ const Dashboard = () => {
                 <Tooltip content={<CustomTooltip />} />
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#5090f0" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#5090f0" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#5090f0" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#5090f0" stopOpacity={0.05}/>
                   </linearGradient>
                 </defs>
                 <Area 
@@ -526,7 +526,8 @@ const Dashboard = () => {
                   stroke="#5090f0" 
                   strokeWidth={2}
                   fill="url(#colorRevenue)" 
-                  activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#5090f0' }}
+                  dot={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
