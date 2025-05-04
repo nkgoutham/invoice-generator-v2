@@ -12,15 +12,17 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "date-fns": "^2.30.0",
-    "react-datepicker": "^4.25.0",
     "dayjs": "^1.11.10",
+    "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
+    "react-datepicker": "^4.25.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.20.1",
+    "recharts": "^2.15.3",
     "zustand": "^4.4.7"
   },
   "devDependencies": {

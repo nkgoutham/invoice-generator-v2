@@ -46,7 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, isMobile = false }) => {
     if (profile?.business_name) {
       return profile.business_name.charAt(0).toUpperCase();
     }
-    return 'B'; // Default fallback
+    return 'E'; // Default fallback for easyinvoice
   };
 
   // Generate a color based on the business name
@@ -98,7 +98,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, isMobile = false }) => {
         )}
         <h1 className={`${isMobile ? 'ml-3' : 'ml-0'} text-lg sm:text-xl font-semibold text-neutral-800 truncate`}>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-500 to-accent-secondary-500">
-            Freelancer Invoice
+            easyinvoice
           </span>
         </h1>
       </div>

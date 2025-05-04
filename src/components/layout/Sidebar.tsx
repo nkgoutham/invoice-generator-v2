@@ -86,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
             <FileText className="h-5 w-5" />
           </div>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 to-accent-secondary-600">
-            InvoicePro
+            easyinvoice
           </span>
         </Link>
       </div>

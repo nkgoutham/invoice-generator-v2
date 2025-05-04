@@ -1,3 +1,12 @@
+/* Add these styling rules for the revenue chart */
+.revenue-point:hover .revenue-tooltip {
+  display: block;
+}
+
+.revenue-tooltip {
+  display: none;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
