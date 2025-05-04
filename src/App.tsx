@@ -1,34 +1,52 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 
-// Pages
-import Dashboard from './pages/Dashboard';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import ResetPassword from './pages/auth/ResetPassword';
-import Profile from './pages/profile/Profile';
-import BankingInfo from './pages/profile/BankingInfo';
-import Clients from './pages/clients/Clients';
-import ClientDetails from './pages/clients/ClientDetails';
-import NewClient from './pages/clients/NewClient';
-import EditClient from './pages/clients/EditClient';
-import Invoices from './pages/invoices/Invoices';
-import NewInvoice from './pages/invoices/NewInvoice';
-import InvoiceDetails from './pages/invoices/InvoiceDetails';
-import InvoicePDF from './pages/invoices/InvoicePDF';
-import InvoicePreview from './pages/invoices/InvoicePreview';
-import Earnings from './pages/earnings/Earnings';
-import RecurringInvoices from './pages/recurring/RecurringInvoices';
-import NewRecurringInvoice from './pages/recurring/NewRecurringInvoice';
-import RecurringInvoiceDetails from './pages/recurring/RecurringInvoiceDetails';
-import InvoiceReminders from './pages/settings/InvoiceReminders';
-import CurrencySettings from './pages/settings/CurrencySettings';
-import SettingsLayout from './pages/settings/SettingsLayout';
+// Components that are used immediately
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
-import NotFound from './pages/NotFound';
+
+// Lazy loaded pages
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const Profile = lazy(() => import('./pages/profile/Profile'));
+const BankingInfo = lazy(() => import('./pages/profile/BankingInfo'));
+const Clients = lazy(() => import('./pages/clients/Clients'));
+const ClientDetails = lazy(() => import('./pages/clients/ClientDetails'));
+const NewClient = lazy(() => import('./pages/clients/NewClient'));
+const EditClient = lazy(() => import('./pages/clients/EditClient'));
+const Invoices = lazy(() => import('./pages/invoices/Invoices'));
+const NewInvoice = lazy(() => import('./pages/invoices/NewInvoice'));
+const PastInvoiceForm = lazy(() => import('./pages/invoices/PastInvoiceForm'));
+const InvoiceDetails = lazy(() => import('./pages/invoices/InvoiceDetails'));
+const InvoicePDF = lazy(() => import('./pages/invoices/InvoicePDF'));
+const InvoicePreview = lazy(() => import('./pages/invoices/InvoicePreview'));
+const Earnings = lazy(() => import('./pages/earnings/Earnings'));
+const RecurringInvoices = lazy(() => import('./pages/recurring/RecurringInvoices'));
+const NewRecurringInvoice = lazy(() => import('./pages/recurring/NewRecurringInvoice'));
+const RecurringInvoiceDetails = lazy(() => import('./pages/recurring/RecurringInvoiceDetails'));
+const InvoiceReminders = lazy(() => import('./pages/settings/InvoiceReminders'));
+const CurrencySettings = lazy(() => import('./pages/settings/CurrencySettings'));
+const SettingsLayout = lazy(() => import('./pages/settings/SettingsLayout'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Loading component for suspense
+const Loading = () => (
+  <div className="flex items-center justify-center h-screen bg-neutral-50">
+    <div className="relative">
+      <div className="h-16 w-16 rounded-full border-t-3 border-b-3 border-accent-500 animate-spin"></div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full bg-white"></div>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="h-4 w-4 rounded-full bg-accent-100 animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+);
 
 function App() {
   const { init, isAuthenticated, loading } = useAuthStore();
@@ -38,19 +56,7 @@ function App() {
   }, [init]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-neutral-50">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-t-3 border-b-3 border-accent-500 animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full bg-white"></div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-4 w-4 rounded-full bg-accent-100 animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
@@ -82,48 +88,135 @@ function App() {
           },
         }}
       />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        
-        {/* Protected Routes */}
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="/dashboard" />} />
-          <Route path="dashboard" element={<Dashboard />} />
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
-          <Route path="profile" element={<Profile />} />
-          <Route path="banking" element={<BankingInfo />} />
-          
-          <Route path="clients" element={<Clients />} />
-          <Route path="clients/new" element={<NewClient />} />
-          <Route path="clients/:id" element={<ClientDetails />} />
-          <Route path="clients/:id/edit" element={<EditClient />} />
-          
-          <Route path="invoices" element={<Invoices />} />
-          <Route path="invoices/new" element={<NewInvoice />} />
-          <Route path="invoices/:id" element={<InvoiceDetails />} />
-          <Route path="invoices/:id/pdf" element={<InvoicePDF />} />
-          <Route path="invoices/:id/preview" element={<InvoicePreview />} />
-          <Route path="earnings" element={<Earnings />} />
-          
-          {/* New Recurring Invoice Routes */}
-          <Route path="recurring" element={<RecurringInvoices />} />
-          <Route path="recurring/new" element={<NewRecurringInvoice />} />
-          <Route path="recurring/:id" element={<RecurringInvoiceDetails />} />
-          
-          {/* Settings Routes */}
-          <Route path="settings" element={<SettingsLayout />}>
-            <Route index element={<Navigate to="reminders" replace />} />
-            <Route path="reminders" element={<InvoiceReminders />} />
-            <Route path="currency" element={<CurrencySettings />} />
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/dashboard" />} />
+            <Route path="dashboard" element={
+              <Suspense fallback={<Loading />}>
+                <Dashboard />
+              </Suspense>
+            } />
+            
+            <Route path="profile" element={
+              <Suspense fallback={<Loading />}>
+                <Profile />
+              </Suspense>
+            } />
+            <Route path="banking" element={
+              <Suspense fallback={<Loading />}>
+                <BankingInfo />
+              </Suspense>
+            } />
+            
+            <Route path="clients" element={
+              <Suspense fallback={<Loading />}>
+                <Clients />
+              </Suspense>
+            } />
+            <Route path="clients/new" element={
+              <Suspense fallback={<Loading />}>
+                <NewClient />
+              </Suspense>
+            } />
+            <Route path="clients/:id" element={
+              <Suspense fallback={<Loading />}>
+                <ClientDetails />
+              </Suspense>
+            } />
+            <Route path="clients/:id/edit" element={
+              <Suspense fallback={<Loading />}>
+                <EditClient />
+              </Suspense>
+            } />
+            
+            <Route path="invoices" element={
+              <Suspense fallback={<Loading />}>
+                <Invoices />
+              </Suspense>
+            } />
+            <Route path="invoices/new" element={
+              <Suspense fallback={<Loading />}>
+                <NewInvoice />
+              </Suspense>
+            } />
+            <Route path="past-invoice" element={
+              <Suspense fallback={<Loading />}>
+                <PastInvoiceForm />
+              </Suspense>
+            } />
+            <Route path="invoices/:id" element={
+              <Suspense fallback={<Loading />}>
+                <InvoiceDetails />
+              </Suspense>
+            } />
+            <Route path="invoices/:id/pdf" element={
+              <Suspense fallback={<Loading />}>
+                <InvoicePDF />
+              </Suspense>
+            } />
+            <Route path="invoices/:id/preview" element={
+              <Suspense fallback={<Loading />}>
+                <InvoicePreview />
+              </Suspense>
+            } />
+            <Route path="earnings" element={
+              <Suspense fallback={<Loading />}>
+                <Earnings />
+              </Suspense>
+            } />
+            
+            {/* Recurring Invoice Routes */}
+            <Route path="recurring" element={
+              <Suspense fallback={<Loading />}>
+                <RecurringInvoices />
+              </Suspense>
+            } />
+            <Route path="recurring/new" element={
+              <Suspense fallback={<Loading />}>
+                <NewRecurringInvoice />
+              </Suspense>
+            } />
+            <Route path="recurring/:id" element={
+              <Suspense fallback={<Loading />}>
+                <RecurringInvoiceDetails />
+              </Suspense>
+            } />
+            
+            {/* Settings Routes */}
+            <Route path="settings" element={
+              <Suspense fallback={<Loading />}>
+                <SettingsLayout />
+              </Suspense>
+            }>
+              <Route index element={<Navigate to="reminders" replace />} />
+              <Route path="reminders" element={
+                <Suspense fallback={<Loading />}>
+                  <InvoiceReminders />
+                </Suspense>
+              } />
+              <Route path="currency" element={
+                <Suspense fallback={<Loading />}>
+                  <CurrencySettings />
+                </Suspense>
+              } />
+            </Route>
           </Route>
-        </Route>
-        
-        {/* 404 Not Found */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          
+          {/* 404 Not Found */}
+          <Route path="*" element={
+            <Suspense fallback={<Loading />}>
+              <NotFound />
+            </Suspense>
+          } />
+        </Routes>
+      </Suspense>
     </>
   );
 }

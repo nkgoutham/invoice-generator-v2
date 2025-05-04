@@ -20,6 +20,10 @@ export interface InvoiceFormData {
   }>;
   retainer_period?: string;
   project_description?: string;
+  payment_date?: string;
+  payment_method?: string;
+  payment_reference?: string;
+  status?: string;
 }
 
 export interface InvoicePreviewData {
@@ -84,6 +88,7 @@ export interface PaymentDetails {
   payment_reference: string;
   amount: number;
   is_partially_paid: boolean;
+  status?: string;
 }
 
 export const PAYMENT_METHODS = [

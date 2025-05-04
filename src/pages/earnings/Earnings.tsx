@@ -39,8 +39,8 @@ const Earnings = () => {
   });
   
   const [revenueHistory, setRevenueHistory] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'monthly' | 'daily' | 'yearly'>('monthly');
-  const [chartType, setChartType] = useState<'bar' | 'pie'>('bar');
+  const [viewMode, setViewMode] = useState<'monthly'>('monthly');
+  const [chartType, setChartType] = useState<'bar'>('bar');
   const [isExporting, setIsExporting] = useState(false);
   
   // Fetch clients and currency settings on component mount
@@ -102,10 +102,10 @@ const Earnings = () => {
       }
 
       // Calculate monthly history
-      const monthlyData = processMonthlyData(invoices, preferredCurrency, conversionRate);
+      const monthlyData = processMonthlyData(invoices || [], preferredCurrency, conversionRate);
       
       // Calculate revenue by client
-      const clientData = processClientData(invoices, preferredCurrency, conversionRate);
+      const clientData = processClientData(invoices || [], preferredCurrency, conversionRate);
       
       // Set revenue data state
       setRevenueHistory(monthlyData.history);
@@ -369,13 +369,7 @@ const Earnings = () => {
   
   // Format the date range for display
   const getDateRangeText = () => {
-    if (viewMode === 'monthly') {
-      return `${startDate.toLocaleString('default', { month: 'long', year: 'numeric' })} to ${endDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
-    } else if (viewMode === 'yearly') {
-      return `${startDate.getFullYear()} to ${endDate.getFullYear()}`;
-    } else {
-      return `${formatDate(startDate)} to ${formatDate(endDate)}`;
-    }
+    return `${startDate.toLocaleString('default', { month: 'long', year: 'numeric' })} to ${endDate.toLocaleString('default', { month: 'long', year: 'numeric' })}`;
   };
 
   // Get the preferred currency
@@ -391,7 +385,6 @@ const Earnings = () => {
     }
 
     // For this prototype, we'll use a simple bar representation
-    // In a real app, you'd use a chart library like Chart.js or Recharts
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm overflow-x-auto">
         <h3 className="text-base font-medium mb-4">Revenue Trend</h3>
@@ -629,13 +622,6 @@ const Earnings = () => {
                 className={`p-1 rounded-md ${chartType === 'bar' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-500'}`}
               >
                 <BarChart2 className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartType('pie')}
-                className={`p-1 rounded-md ${chartType === 'pie' ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-500'}`}
-              >
-                <PieChart className="h-5 w-5" />
               </button>
             </div>
           </div>

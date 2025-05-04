@@ -29,6 +29,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -58,6 +59,9 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
         [name]: value
       }));
     }
+
+    // Clear validation errors when user makes changes
+    setValidationError(null);
   };
   
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,23 +70,24 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       ...prev,
       amount: value
     }));
+    setValidationError(null);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!paymentDetails.payment_date) {
-      alert('Please select a payment date');
+      setValidationError('Please select a payment date');
       return;
     }
     
     if (paymentDetails.is_partially_paid && paymentDetails.amount <= 0) {
-      alert('Please enter a valid payment amount');
+      setValidationError('Please enter a valid payment amount');
       return;
     }
     
     if (paymentDetails.is_partially_paid && paymentDetails.amount >= invoice.total) {
-      if (confirm('The amount you entered is equal to or greater than the total amount. Would you like to mark this as fully paid instead?')) {
+      if (window.confirm('The amount you entered is equal to or greater than the total amount. Would you like to mark this as fully paid instead?')) {
         setPaymentDetails(prev => ({
           ...prev,
           is_partially_paid: false,
@@ -95,11 +100,14 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      await onSave(paymentDetails);
+      await onSave({
+        ...paymentDetails,
+        status: paymentDetails.is_partially_paid ? 'partially_paid' : 'paid'
+      });
       // The parent component will handle success feedback
     } catch (error) {
       console.error('Error recording payment:', error);
-      alert('Failed to record payment');
+      setValidationError('Failed to record payment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -109,6 +117,12 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Record Payment" size="md">
       <form onSubmit={handleSubmit} className="p-4 sm:p-6">
         <div className="space-y-4 sm:space-y-6">
+          {validationError && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-sm">
+              {validationError}
+            </div>
+          )}
+
           {/* Payment Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -210,6 +224,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                 value={paymentDetails.payment_date}
                 onChange={handleChange}
                 className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                max={today}
               />
             </div>
           </div>

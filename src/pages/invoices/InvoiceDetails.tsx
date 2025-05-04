@@ -164,11 +164,17 @@ const InvoiceDetails = () => {
     }
   };
   
-  const handleRecordPayment = async (paymentData: any) => {
+  const handleRecordPayment = async (paymentDetails: any) => {
     if (!id) return;
 
     try {
-      await recordPayment(id, paymentData);
+      // Update the paymentDetails to include the status
+      const updatedPaymentDetails = {
+        ...paymentDetails,
+        status: paymentDetails.is_partially_paid ? 'partially_paid' : 'paid'
+      };
+
+      await recordPayment(id, updatedPaymentDetails);
       toast.success('Payment recorded successfully');
       setShowPaymentModal(false);
       // Refresh the invoice data
@@ -188,7 +194,7 @@ const InvoiceDetails = () => {
     setIsPrinting(true);
     
     try {
-      // Create a clone of the invoice element to apply PDF-specific styling
+      // Create a clone of the invoice element to apply PDF-specific styling without affecting the visible element
       const invoiceClone = invoiceRef.cloneNode(true) as HTMLElement;
       invoiceClone.classList.add('pdf-mode');
       
@@ -600,7 +606,7 @@ const InvoiceDetails = () => {
           </button>
           
           {/* Show Record Payment button for sent, overdue, or partially_paid invoices */}
-          {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue' || selectedInvoice.status === 'partially_paid') && (
+          {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue' || selectedInvoice.status === 'partially_paid' || selectedInvoice.status === 'draft') && (
             <button
               type="button"
               className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
