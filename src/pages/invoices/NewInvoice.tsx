@@ -57,14 +57,18 @@ const NewInvoice = () => {
     register, 
     control, 
     handleSubmit, 
-    setValue, 
-    watch, 
+    setValue,
+    watch,
     getValues,
     formState: { errors } 
   } = useForm<InvoiceFormData>({
     defaultValues: {
       issue_date: new Date().toISOString().split('T')[0],
       due_date: calculateDueDate(new Date().toISOString(), 15),
+      payment_date: '',
+      payment_method: '',
+      payment_reference: '',
+      status: 'draft',
       currency: 'INR',
       tax_percentage: 0,
       reverse_calculation: false,
@@ -92,6 +96,8 @@ const NewInvoice = () => {
   const watchTaxPercentage = watch('tax_percentage');
   const watchReverseCalculation = watch('reverse_calculation');
   const watchNotes = watch('notes');
+  const watchPaymentDate = watch('payment_date');
+  const watchPaymentMethod = watch('payment_method');
   
   // Calculate invoice totals based on engagement type
   const calculateTotals = useCallback(() => {
@@ -661,6 +667,57 @@ const NewInvoice = () => {
             watchClientId={watchClientId}
           />
           
+          {/* Past Invoice Payment Details */}
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3">Payment Details (Optional)</h2>
+            <p className="text-sm text-gray-500 mb-4">Fill these details if you're recording a past invoice that's already been paid</p>
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+              <div>
+                <label htmlFor="payment_date" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Date
+                </label>
+                <input
+                  type="date"
+                  id="payment_date"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  {...register('payment_date')}
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  id="payment_method"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  {...register('payment_method')}
+                >
+                  <option value="">Select payment method</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="cash">Cash</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="upi">UPI</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div className="sm:col-span-2">
+                <label htmlFor="payment_reference" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Reference
+                </label>
+                <input
+                  type="text"
+                  id="payment_reference"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Transaction ID, Cheque number, etc."
+                  {...register('payment_reference')}
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Dynamic Item Sections */}
           {renderEngagementTypeForm()}
           

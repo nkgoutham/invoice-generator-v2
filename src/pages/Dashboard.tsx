@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { useClientStore } from '../store/clientStore';
+import { useCurrencyStore } from '../store/currencyStore';
 import { 
   CreditCard, 
   Users, 
@@ -17,6 +18,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/helpers';
+import CurrencyToggle from '../components/dashboard/CurrencyToggle';
 
 // Dashboard stats type
 type DashboardStat = {
@@ -33,6 +35,7 @@ const Dashboard = () => {
   const { user } = useAuthStore();
   const { invoices, fetchInvoices } = useInvoiceStore();
   const { clients, fetchClients } = useClientStore();
+  const { currencySettings, fetchCurrencySettings, convertCurrency } = useCurrencyStore();
   const [isLoading, setIsLoading] = useState(true);
   
   // Stats for the dashboard
@@ -45,14 +48,15 @@ const Dashboard = () => {
         setIsLoading(true);
         await Promise.all([
           fetchInvoices(user.id),
-          fetchClients(user.id)
+          fetchClients(user.id),
+          fetchCurrencySettings(user.id)
         ]);
         setIsLoading(false);
       }
     };
     
     loadData();
-  }, [user, fetchInvoices, fetchClients]);
+  }, [user, fetchInvoices, fetchClients, fetchCurrencySettings]);
   
   useEffect(() => {
     if (!isLoading) {
@@ -76,26 +80,32 @@ const Dashboard = () => {
       
       const statusDescription = statusBreakdown.join(', ') || 'No invoices';
       
-      const totalRevenue = invoices
-        .filter(inv => inv.status === 'paid')
-        .reduce((sum, inv) => sum + inv.total, 0);
-      
-      // Include both sent and overdue invoices in pending revenue
-      const pendingRevenue = invoices
-        .filter(inv => ['sent', 'overdue'].includes(inv.status))
-        .reduce((sum, inv) => sum + inv.total, 0);
+      const totalRevenue = calculateTotalRevenue(invoices.filter(inv => inv.status === 'paid')); 
+      const pendingRevenue = calculateTotalRevenue([
+        ...invoices.filter(inv => ['sent', 'overdue'].includes(inv.status)),
+        ...invoices.filter(inv => inv.status === 'partially_paid').map(inv => ({
+          ...inv,
+          total: inv.total - (inv.partially_paid_amount || 0)
+        }))
+      ]);
 
-      // Add partially paid invoices (only the remaining amount)
-      const partialRevenue = invoices
-        .filter(inv => inv.status === 'partially_paid')
-        .reduce((sum, inv) => {
-          // Calculate the remaining amount (total - paid amount)
-          const remainingAmount = inv.total - (inv.partially_paid_amount || 0);
-          return sum + remainingAmount;
-        }, 0);
+      const preferredCurrency = currencySettings?.preferred_currency || 'INR';
 
-      const totalPending = pendingRevenue + partialRevenue;
-      
+      // Format revenue based on preferred currency
+      const formatRevenueDisplay = (revenue: { inrAmount: number, usdAmount: number }) => {
+        if (preferredCurrency === 'USD') {
+          // Convert INR to USD if needed and add to USD amount
+          const convertedInr = convertCurrency(revenue.inrAmount, 'INR', 'USD');
+          const totalUsd = revenue.usdAmount + convertedInr;
+          return formatCurrency(totalUsd, 'USD');
+        } else {
+          // Convert USD to INR if needed and add to INR amount
+          const convertedUsd = convertCurrency(revenue.usdAmount, 'USD', 'INR');
+          const totalInr = revenue.inrAmount + convertedUsd;
+          return formatCurrency(totalInr, 'INR');
+        }
+      };
+
       const newStats: DashboardStat[] = [
         {
           title: 'Total Clients',
@@ -117,7 +127,7 @@ const Dashboard = () => {
         },
         {
           title: 'Total Paid',
-          value: formatCurrency(totalRevenue),
+          value: formatRevenueDisplay(totalRevenue),
           description: 'Total revenue received',
           icon: <Wallet className="h-5 w-5" />,
           color: 'text-emerald-600',
@@ -126,7 +136,7 @@ const Dashboard = () => {
         },
         {
           title: 'Pending Revenue',
-          value: formatCurrency(totalPending),
+          value: formatRevenueDisplay(pendingRevenue),
           description: 'Awaiting payment',
           icon: <CreditCard className="h-5 w-5" />,
           color: 'text-amber-600',
@@ -163,7 +173,33 @@ const Dashboard = () => {
       
       setRecentActivity(activityItems.slice(0, 5));
     }
-  }, [isLoading, clients, invoices]);
+  }, [isLoading, clients, invoices, currencySettings, convertCurrency]);
+
+  // Function to calculate total revenue with currency conversion
+  const calculateTotalRevenue = (invoiceList: any[]) => {
+    let inrAmount = 0;
+    let usdAmount = 0;
+
+    for (const inv of invoiceList) {
+      if (inv.status === 'partially_paid' && inv.partially_paid_amount !== undefined) {
+        // For partially paid invoices, use the paid amount
+        if (inv.currency === 'USD') {
+          usdAmount += inv.partially_paid_amount;
+        } else {
+          inrAmount += inv.partially_paid_amount;
+        }
+      } else {
+        // For fully paid invoices, use the total amount
+        if (inv.currency === 'USD') {
+          usdAmount += inv.total;
+        } else {
+          inrAmount += inv.total;
+        }
+      }
+    }
+
+    return { inrAmount, usdAmount };
+  };
   
   const recentInvoices = [...(invoices || [])]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -199,11 +235,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 to-accent-500">
-            Dashboard
-          </span>
-        </h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-neutral-900">Dashboard</h1>
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <Link
             to="/invoices/new"
@@ -222,22 +254,27 @@ const Dashboard = () => {
         </div>
       </div>
       
+      {/* Currency Toggle */}
+      <div className="flex justify-end">
+        <CurrencyToggle />
+      </div>
+      
       {/* Stats grid - Improved for mobile */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {stats.map((stat, index) => (
-          <div key={index} className="card hover:shadow-hover group transition-all duration-300 overflow-hidden">
-            <div className="p-3 sm:p-5">
+          <div key={index} className="flex flex-col h-full card hover:shadow-hover group transition-all duration-300 overflow-hidden">
+            <div className="flex-1 p-4 sm:p-5">
               <div className="flex items-center">
-                <div className={`flex-shrink-0 rounded-md p-2.5 ${stat.iconBg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`flex-shrink-0 rounded-xl p-3 ${stat.iconBg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
                   {stat.icon}
                 </div>
-                <div className="ml-3 sm:ml-5 w-0 flex-1">
+                <div className="ml-4 flex-1 min-w-0 space-y-1">
                   <dl>
                     <dt className="text-xs sm:text-sm font-medium text-neutral-500 truncate">
                       {stat.title}
                     </dt>
                     <dd>
-                      <div className="text-sm sm:text-lg font-medium text-neutral-900">
+                      <div className="text-base sm:text-lg font-medium text-neutral-900">
                         {stat.value}
                       </div>
                     </dd>
@@ -245,8 +282,8 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            <div className={`${stat.bgColor} px-3 py-2 sm:px-5 sm:py-3 transition-colors duration-300`}>
-              <div className="text-xs sm:text-sm text-neutral-600">
+            <div className={`${stat.bgColor} px-4 py-3 border-t border-gray-100/50 transition-colors duration-300`}>
+              <div className="text-sm text-neutral-600 truncate">
                 {stat.description}
               </div>
             </div>

@@ -1,16 +1,23 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-// Get environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create Supabase client
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase URL or anon key');
+}
 
-// Database Types
-export type Profile = {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Custom types for our Supabase tables
+export interface User {
   id: string;
-  created_at: string;
+  email: string;
+  created_at?: string;
+}
+
+export interface Profile {
+  id: string;
   user_id: string;
   business_name: string | null;
   address: string | null;
@@ -20,51 +27,52 @@ export type Profile = {
   primary_color: string | null;
   secondary_color: string | null;
   footer_text: string | null;
-};
+  created_at?: string;
+}
 
-export type BankingInfo = {
+export interface BankingInfo {
   id: string;
-  created_at: string;
   user_id: string;
   account_holder: string | null;
   account_number: string | null;
   ifsc_code: string | null;
   bank_name: string | null;
   branch: string | null;
-};
+  created_at?: string;
+}
 
-export type Client = {
+export interface Client {
   id: string;
-  created_at: string;
   user_id: string;
   name: string;
-  company_name: string | null;
-  billing_address: string | null;
-  gst_number: string | null;
-  contact_person: string | null;
-  email: string | null;
-  phone: string | null;
-  status: string;
-  engagement_status: string;
-};
+  company_name?: string | null;
+  contact_person?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  billing_address?: string | null;
+  gst_number?: string | null;
+  status?: string;
+  engagement_status?: string;
+  created_at?: string;
+}
 
-export type EngagementModel = {
+export interface EngagementModel {
   id: string;
-  created_at: string;
   client_id: string;
   type: 'retainership' | 'project' | 'milestone' | 'service';
-  retainer_amount: number | null;
-  project_value: number | null;
-  service_rates: Array<{
+  retainer_amount?: number | null;
+  project_value?: number | null;
+  service_rates?: Array<{
     name: string;
     rate: number;
     unit: string;
+    currency?: string;
   }> | null;
-};
+  created_at?: string;
+}
 
-export type Invoice = {
+export interface Invoice {
   id: string;
-  created_at: string;
   user_id: string;
   client_id: string;
   invoice_number: string;
@@ -74,73 +82,83 @@ export type Invoice = {
   subtotal: number;
   tax: number;
   total: number;
-  notes: string | null;
+  notes?: string | null;
   currency: string;
-  engagement_type: 'retainership' | 'project' | 'milestone' | 'service';
-  tax_percentage: number;
-  reverse_calculation: boolean;
-  payment_date: string | null;
-  payment_method: string | null;
-  payment_reference: string | null;
-  partially_paid_amount: number | null;
-  is_partially_paid: boolean | null;
-  clients?: Client;
-};
+  engagement_type?: string;
+  tax_percentage?: number;
+  reverse_calculation?: boolean;
+  payment_date?: string | null;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  partially_paid_amount?: number;
+  is_partially_paid?: boolean;
+  next_reminder_date?: string | null;
+  last_reminder_sent?: string | null;
+  created_at?: string;
+  clients?: Client; // Used for joins
+  milestones?: Array<{ name: string; amount: number }>;
+  items?: any[];
+}
 
-export type InvoiceItem = {
+export interface InvoiceItem {
   id: string;
-  created_at: string;
   invoice_id: string;
-  description: string | null;
+  description?: string | null;
   quantity: number;
   rate: number;
   amount: number;
-  task_id: string | null;
-  milestone_name: string | null;
-  retainer_period: string | null;
-  project_description: string | null;
-};
+  milestone_name?: string | null;
+  retainer_period?: string | null;
+  project_description?: string | null;
+  task_id?: string | null;
+  created_at?: string;
+}
 
-export type RecurringInvoice = {
+export interface RecurringInvoice {
   id: string;
-  created_at: string;
   user_id: string;
   client_id: string;
   title: string;
   frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   start_date: string;
-  end_date: string | null;
+  end_date?: string | null;
   next_issue_date: string;
-  last_generated: string | null;
+  last_generated?: string | null;
   status: 'active' | 'inactive';
-  template_data: {
-    invoice_data: {
-      due_date_days: number;
-      notes: string | null;
-      currency: string;
-      engagement_type: string;
-      tax_percentage: number;
-      reverse_calculation: boolean;
-    };
-    invoice_items: Array<{
-      description: string | null;
-      quantity: number;
-      rate: number;
-      amount: number;
-      milestone_name?: string;
-    }>;
-  };
-  auto_send: boolean;
-  clients?: Client;
-};
+  template_data: any;
+  auto_send?: boolean;
+  created_at?: string;
+  clients?: Client; // Used for joins
+}
 
-export type InvoiceReminder = {
+export interface InvoiceReminder {
   id: string;
-  created_at: string;
   user_id: string;
   days_before_due: number[];
   days_after_due: number[];
-  reminder_subject: string | null;
-  reminder_message: string | null;
+  reminder_subject: string;
+  reminder_message: string;
   enabled: boolean;
-};
+  created_at?: string;
+}
+
+export interface Task {
+  id: string;
+  client_id: string;
+  name: string;
+  description?: string | null;
+  start_date: string;
+  end_date?: string | null;
+  status: 'pending' | 'in_progress' | 'completed';
+  engagement_model_id?: string | null;
+  created_at?: string;
+}
+
+export interface Document {
+  id: string;
+  client_id: string;
+  name: string;
+  file_url: string;
+  type?: 'contract' | 'scope' | 'other' | null;
+  created_at?: string;
+}

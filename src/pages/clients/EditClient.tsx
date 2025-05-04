@@ -26,7 +26,7 @@ const EditClient = () => {
     type: 'service',
     retainer_amount: '',
     project_value: '',
-    service_rates: [{ name: 'Hourly Rate', rate: 0, unit: 'hour' }]
+    service_rates: [{ name: 'Hourly Rate', rate: 0, unit: 'hour', currency: 'INR' }]
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,7 +75,12 @@ const EditClient = () => {
               type: model.type || 'service',
               retainer_amount: model.retainer_amount ? String(model.retainer_amount) : '',
               project_value: model.project_value ? String(model.project_value) : '',
-              service_rates: model.service_rates || [{ name: 'Hourly Rate', rate: 0, unit: 'hour' }]
+              service_rates: model.service_rates && model.service_rates.length > 0 
+                ? model.service_rates.map(rate => ({
+                    ...rate, 
+                    currency: rate.currency || 'INR'
+                  }))
+                : [{ name: 'Hourly Rate', rate: 0, unit: 'hour', currency: 'INR' }]
             });
             
             // Update engagement status based on model type
@@ -124,6 +129,13 @@ const EditClient = () => {
       updatedRates[0] = { ...updatedRates[0], rate: parseFloat(value) || 0 };
       setEngagementData(prev => ({ ...prev, service_rates: updatedRates }));
     }
+  };
+
+  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const currency = e.target.value;
+    const updatedRates = [...engagementData.service_rates];
+    updatedRates[0] = { ...updatedRates[0], currency };
+    setEngagementData(prev => ({ ...prev, service_rates: updatedRates }));
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -387,20 +399,31 @@ const EditClient = () => {
                     <label htmlFor="hourly_rate" className="block text-sm font-medium text-gray-700 mb-1">
                       Hourly Rate
                     </label>
-                    <div className="flex">
-                      <div className="flex items-center justify-center bg-gray-100 px-3 border border-r-0 border-gray-300 rounded-l-md">
-                        ₹
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="flex col-span-3">
+                        <select
+                          id="rate_currency"
+                          className="flex items-center justify-center bg-gray-100 px-3 border border-r-0 border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          value={engagementData.service_rates[0].currency || 'INR'}
+                          onChange={handleCurrencyChange}
+                        >
+                          <option value="INR">₹</option>
+                          <option value="USD">$</option>
+                        </select>
+                        <input
+                          type="number"
+                          id="hourly_rate"
+                          name="hourly_rate"
+                          value={engagementData.service_rates[0].rate}
+                          onChange={handleRateChange}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
                       </div>
-                      <input
-                        type="number"
-                        id="hourly_rate"
-                        name="hourly_rate"
-                        value={engagementData.service_rates[0]?.rate || 0}
-                        onChange={handleRateChange}
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
+                      <div className="text-gray-500 flex items-center text-sm">
+                        per hour
+                      </div>
                     </div>
                   </div>
                 )}

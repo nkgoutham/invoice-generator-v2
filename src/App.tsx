@@ -19,10 +19,13 @@ import NewInvoice from './pages/invoices/NewInvoice';
 import InvoiceDetails from './pages/invoices/InvoiceDetails';
 import InvoicePDF from './pages/invoices/InvoicePDF';
 import InvoicePreview from './pages/invoices/InvoicePreview';
+import Earnings from './pages/earnings/Earnings';
 import RecurringInvoices from './pages/recurring/RecurringInvoices';
 import NewRecurringInvoice from './pages/recurring/NewRecurringInvoice';
 import RecurringInvoiceDetails from './pages/recurring/RecurringInvoiceDetails';
 import InvoiceReminders from './pages/settings/InvoiceReminders';
+import CurrencySettings from './pages/settings/CurrencySettings';
+import SettingsLayout from './pages/settings/SettingsLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import NotFound from './pages/NotFound';
@@ -103,6 +106,7 @@ function App() {
           <Route path="invoices/:id" element={<InvoiceDetails />} />
           <Route path="invoices/:id/pdf" element={<InvoicePDF />} />
           <Route path="invoices/:id/preview" element={<InvoicePreview />} />
+          <Route path="earnings" element={<Earnings />} />
           
           {/* New Recurring Invoice Routes */}
           <Route path="recurring" element={<RecurringInvoices />} />
@@ -110,7 +114,11 @@ function App() {
           <Route path="recurring/:id" element={<RecurringInvoiceDetails />} />
           
           {/* Settings Routes */}
-          <Route path="settings/reminders" element={<InvoiceReminders />} />
+          <Route path="settings" element={<SettingsLayout />}>
+            <Route index element={<Navigate to="reminders" replace />} />
+            <Route path="reminders" element={<InvoiceReminders />} />
+            <Route path="currency" element={<CurrencySettings />} />
+          </Route>
         </Route>
         
         {/* 404 Not Found */}

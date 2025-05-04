@@ -16,6 +16,27 @@ export const formatCurrency = (amount: number, currency = 'INR'): string => {
   }).format(amount);
 };
 
+// Format currency with conversion if needed
+export const formatCurrencyWithConversion = (amount: number, fromCurrency: string, toCurrency: string, conversionRate: number): string => {
+  // Skip conversion if currencies are the same
+  if (fromCurrency === toCurrency) {
+    return formatCurrency(amount, toCurrency);
+  }
+
+  let convertedAmount = amount;
+
+  // Convert from USD to INR
+  if (fromCurrency === 'USD' && toCurrency === 'INR') {
+    convertedAmount = amount * conversionRate;
+  }
+  // Convert from INR to USD
+  else if (fromCurrency === 'INR' && toCurrency === 'USD') {
+    convertedAmount = amount / conversionRate;
+  }
+
+  return formatCurrency(convertedAmount, toCurrency);
+};
+
 export const formatDate = (date: string | Date): string => {
   return format(new Date(date), 'dd MMM yyyy');
 };

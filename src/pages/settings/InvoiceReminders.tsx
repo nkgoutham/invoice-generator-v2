@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { useReminderStore } from '../../store/reminderStore';
-import { Save, Plus, Minus, ArrowLeft, Mail, AlertCircle, Clock } from 'lucide-react';
+import { Plus, Minus, Mail, AlertCircle, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { InvoiceReminderFormData } from '../../types/invoice';
 
 const InvoiceReminders = () => {
-  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { reminderSettings, fetchReminderSettings, createReminderSettings, updateReminderSettings, loading } = useReminderStore();
   
@@ -92,17 +90,6 @@ const InvoiceReminders = () => {
   
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center mb-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="mr-4 text-gray-500 hover:text-gray-700"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">Invoice Reminders</h1>
-      </div>
-      
       <div className="bg-white shadow overflow-hidden rounded-lg">
         <div className="px-4 py-4 sm:px-6 border-b border-gray-200">
           <div className="flex items-center">
@@ -338,7 +325,6 @@ const InvoiceReminders = () => {
               disabled={loading || (!isDirty && reminderSettings !== null)}
               className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              <Save className="mr-2 h-4 w-4" />
               {loading ? 'Saving...' : 'Save Settings'}
             </button>
           </div>

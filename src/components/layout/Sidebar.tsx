@@ -7,7 +7,8 @@ import {
   User,
   LogOut,
   RefreshCw,
-  Settings
+  Settings,
+  TrendingUp
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -52,6 +53,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
       icon: <RefreshCw className="w-5 h-5" />,
     },
     {
+      name: 'Earnings',
+      path: '/earnings',
+      icon: <TrendingUp className="w-5 h-5" />,
+    },
+    {
       name: 'Profile',
       path: '/profile',
       icon: <User className="w-5 h-5" />,
@@ -63,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
     },
     {
       name: 'Settings',
-      path: '/settings/reminders',
+      path: '/settings',
       icon: <Settings className="w-5 h-5" />,
     },
   ];
