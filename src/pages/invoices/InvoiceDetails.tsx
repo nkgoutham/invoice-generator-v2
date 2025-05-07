@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { useAuthStore } from '../../store/authStore';
 import { useInvoiceStore } from '../../store/invoiceStore';
 import { useProfileStore } from '../../store/profileStore';
+import { useExpenseStore } from '../../store/expenseStore';
 import {
   ArrowLeft,
   Printer,
@@ -18,7 +20,8 @@ import {
   FileText,
   DollarSign,
   CreditCard,
-  CheckCircle,
+  Receipt,
+  Plus,
   Briefcase,
   Eye,
   CreditCard as CreditCardIcon
@@ -32,6 +35,7 @@ import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 
 const InvoiceDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   
   const { 
@@ -46,12 +50,14 @@ const InvoiceDetails = () => {
   } = useInvoiceStore();
   
   const { profile, fetchProfile } = useProfileStore();
+  const { expenses, fetchExpenses } = useExpenseStore();
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const [isPrinting, setIsPrinting] = useState(false);
   const [invoiceRef, setInvoiceRef] = useState<HTMLDivElement | null>(null);
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
+  const [billableExpenses, setBillableExpenses] = useState<any[]>([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,14 +72,30 @@ const InvoiceDetails = () => {
     if (id) {
       fetchInvoice(id);
       fetchInvoiceItems(id);
+      
+      if (user) {
+        fetchExpenses(user.id);
+      }
     }
-  }, [id, fetchInvoice, fetchInvoiceItems]);
+  }, [id, user, fetchInvoice, fetchInvoiceItems, fetchExpenses]);
   
   useEffect(() => {
     if (selectedInvoice) {
       fetchProfile(selectedInvoice.user_id);
     }
   }, [selectedInvoice, fetchProfile]);
+  
+  // Filter expenses associated with this invoice
+  useEffect(() => {
+    if (id && expenses.length > 0) {
+      const filteredExpenses = expenses.filter(expense => 
+        expense.invoice_id === id || 
+        (expense.is_billable && expense.client_id === selectedInvoice?.client_id)
+      );
+      
+      setBillableExpenses(filteredExpenses);
+    }
+  }, [id, expenses, selectedInvoice]);
 
   // Prepare preview data for PDF generation
   useEffect(() => {
@@ -657,6 +679,105 @@ const InvoiceDetails = () => {
             <span className="hidden xs:inline">Delete</span>
           </button>
         </div>
+      </div>
+      
+      {/* Billable Expenses Section */}
+      <div className="bg-white shadow rounded-lg overflow-hidden mb-4 sm:mb-6">
+        <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Billable Expenses</h2>
+            <p className="text-sm text-gray-500">Expenses associated with this invoice</p>
+          </div>
+          
+          <Link
+            to={`/expenses/new?client=${selectedInvoice?.client_id}&invoice=${id}`}
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">Add Expense</span>
+          </Link>
+        </div>
+        
+        {billableExpenses.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {billableExpenses.map((expense) => (
+                  <tr key={expense.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(expense.date)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {expense.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {expense.category ? (
+                        <span 
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          style={{ 
+                            backgroundColor: `${expense.category.color}20`,
+                            color: expense.category.color
+                          }}
+                        >
+                          {expense.category.name}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                      {formatCurrency(expense.amount, expense.currency)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                      <Link
+                        to={`/expenses/${expense.id}`}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-6 text-center">
+            <Receipt className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No billable expenses</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Add expenses that can be billed to this client.
+            </p>
+            <div className="mt-6">
+              <Link
+                to={`/expenses/new?client=${selectedInvoice?.client_id}&invoice=${id}`}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Plus className="mr-2 -ml-1 h-5 w-5" />
+                Add Billable Expense
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Payment Recording Modal */}

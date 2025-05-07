@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pencil, Trash, FilePlus, Building, Phone, Mail, MapPin, CreditCard, Briefcase } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash, FilePlus, Building, Phone, Mail, MapPin, CreditCard, Briefcase, Receipt } from 'lucide-react';
 import { useClientStore } from '../../store/clientStore';
+import { useExpenseStore } from '../../store/expenseStore';
+import { useAuthStore } from '../../store/authStore';
 import { EngagementModel } from '../../lib/supabase';
 import { formatCurrency } from '../../utils/helpers';
 
 const ClientDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const { getClient, deleteClient, fetchEngagementModel, loading } = useClientStore();
+  const { expenses, fetchExpenses } = useExpenseStore();
+  
   const [client, setClient] = useState<any>(null);
   const [engagementModel, setEngagementModel] = useState<EngagementModel | null>(null);
+  const [clientExpenses, setClientExpenses] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -24,6 +30,20 @@ const ClientDetails = () => {
     }
   }, [id, getClient]);
 
+  useEffect(() => {
+    if (user) {
+      fetchExpenses(user.id);
+    }
+  }, [user, fetchExpenses]);
+  
+  // Filter expenses for this client
+  useEffect(() => {
+    if (id && expenses.length > 0) {
+      const filteredExpenses = expenses.filter(expense => expense.client_id === id);
+      setClientExpenses(filteredExpenses);
+    }
+  }, [id, expenses]);
+  
   useEffect(() => {
     if (id) {
       const fetchEngagement = async () => {
@@ -212,16 +232,100 @@ const ClientDetails = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <h2 className="text-lg font-semibold mb-4">Recent Invoices</h2>
-          <div className="text-center py-6 sm:py-8 text-gray-500">
-            No invoices found for this client
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold">Recent Invoices</h2>
+          </div>
+          <div className="p-6 text-center">
+            <div className="text-center py-6 sm:py-8 text-gray-500">
+              No invoices found for this client
+            </div>
+            <Link
+              to={`/invoices/new?client=${id}`}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <FilePlus className="mr-2 h-4 w-4" />
+              Create Invoice
+            </Link>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          <h2 className="text-lg font-semibold mb-4">Tasks</h2>
-          <div className="text-center py-6 sm:py-8 text-gray-500">
-            No tasks found for this client
+        
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Billable Expenses</h2>
+              <Link
+                to={`/expenses/new?client=${id}`}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Receipt className="mr-1.5 h-3.5 w-3.5" />
+                Add Expense
+              </Link>
+            </div>
+          </div>
+          
+          {clientExpenses.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {clientExpenses.slice(0, 5).map((expense) => (
+                    <tr key={expense.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(expense.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {expense.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                        {formatCurrency(expense.amount, expense.currency)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {clientExpenses.length > 5 && (
+                <div className="px-6 py-3 bg-gray-50 text-center">
+                  <Link
+                    to={`/expenses?client=${id}`}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    View all {clientExpenses.length} expenses
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-6 text-center">
+              <Receipt className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No billable expenses</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Add expenses that can be billed to this client.
+              </p>
+              <div className="mt-6">
+                <Link
+                  to={`/expenses/new?client=${id}`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Receipt className="mr-2 -ml-1 h-5 w-5" />
+                  Add Billable Expense
+                </Link>
+              </div>
+            </div>
+          )}
           </div>
         </div>
       </div>

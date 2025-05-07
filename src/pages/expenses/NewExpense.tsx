@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { useExpenseStore, ExpenseCategory } from '../../store/expenseStore';
 import { useClientStore } from '../../store/clientStore';
+import { useInvoiceStore } from '../../store/invoiceStore';
 import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, Plus, FileInvoice } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ExpenseCategoryForm from '../../components/expenses/ExpenseCategoryForm';
@@ -46,11 +47,16 @@ const NewExpense = () => {
   const { createExpense, categories, fetchCategories, uploadReceipt, loading } = useExpenseStore();
   const { clients, fetchClients } = useClientStore();
   const { invoices, fetchInvoices } = useInvoiceStore();
+  const [searchParams] = useSearchParams();
   
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  
+  // Get client_id and invoice_id from URL params if available
+  const clientIdParam = searchParams.get('client');
+  const invoiceIdParam = searchParams.get('invoice');
   
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<ExpenseFormData>({
     defaultValues: {
@@ -78,6 +84,19 @@ const NewExpense = () => {
       fetchInvoices(user.id);
     }
   }, [user, fetchCategories, fetchClients, fetchInvoices]);
+  
+  // Set client and invoice from URL params
+  useEffect(() => {
+    if (clientIdParam) {
+      setValue('client_id', clientIdParam);
+      setValue('is_billable', true);
+    }
+    
+    if (invoiceIdParam) {
+      setValue('invoice_id', invoiceIdParam);
+      setValue('is_billable', true);
+    }
+  }, [clientIdParam, invoiceIdParam, setValue]);
   
   // Filter invoices by selected client
   const clientInvoices = invoices.filter(invoice => 
