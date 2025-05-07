@@ -326,7 +326,6 @@ const ClientDetails = () => {
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
     </div>
