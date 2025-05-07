@@ -4,11 +4,14 @@ import { FileQuestion } from 'lucide-react';
 const NotFound = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center">
-            <FileQuestion className="h-10 w-10 text-blue-600" />
-          </div>
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <img 
+          src="/full_logo.png" 
+          alt="InvoicePro Logo" 
+          className="h-16 mx-auto mb-6"
+        />
+        <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mt-6">
+          <FileQuestion className="h-10 w-10 text-blue-600" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           404 - Page Not Found

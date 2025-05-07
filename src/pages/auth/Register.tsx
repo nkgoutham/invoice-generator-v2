@@ -32,12 +32,12 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="flex justify-center">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-secondary-500 flex items-center justify-center shadow-lg transform transition-transform hover:scale-105 duration-300">
-            <FileText className="h-7 w-7 text-white" />
-          </div>
-        </div>
-        <h2 className="mt-5 text-center text-2xl font-bold tracking-tight text-neutral-900">
+        <img 
+          src="/full_logo.png" 
+          alt="InvoicePro Logo" 
+          className="h-16 mx-auto mb-6"
+        />
+        <h2 className="text-center text-2xl font-bold tracking-tight text-neutral-900">
           Create your account
         </h2>
         <p className="mt-2 text-center text-sm text-neutral-600">

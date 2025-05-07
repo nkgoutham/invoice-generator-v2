@@ -85,15 +85,14 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
       <div className="h-16 sm:h-18 flex items-center px-6 border-b border-neutral-200/80">
         <Link 
           to="/" 
-          className="flex items-center space-x-2 font-semibold text-xl"
+          className="flex items-center"
           onClick={handleClick}
         >
-          <div className="h-8 w-8 rounded-md bg-gradient-to-br from-accent-500 to-accent-secondary-500 flex items-center justify-center text-white shadow-md">
-            <FileText className="h-5 w-5" />
-          </div>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 to-accent-secondary-600">
-            easyinvoice
-          </span>
+          <img 
+            src="/full_logo.png" 
+            alt="InvoicePro Logo" 
+            className="h-10 object-contain"
+          />
         </Link>
       </div>
       

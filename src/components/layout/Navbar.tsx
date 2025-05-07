@@ -46,7 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick, isMobile = false }) => {
     if (profile?.business_name) {
       return profile.business_name.charAt(0).toUpperCase();
     }
-    return 'E'; // Default fallback for easyinvoice
+    return 'I'; // Default fallback for InvoicePro
   };
 
   // Generate a color based on the business name
