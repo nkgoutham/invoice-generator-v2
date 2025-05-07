@@ -315,6 +315,18 @@ const InvoiceDetails = () => {
     return methodMap[method] || method;
   };
   
+  // Helper function to safely format dates
+  const safeFormatDate = (dateValue: string | null | undefined) => {
+    if (!dateValue) return '';
+    
+    try {
+      return formatDate(dateValue);
+    } catch (error) {
+      console.error('Invalid date value:', dateValue, error);
+      return '';
+    }
+  };
+  
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-0" ref={(ref) => setInvoiceRef(ref)}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3 mb-4 sm:mb-6">
@@ -352,13 +364,13 @@ const InvoiceDetails = () => {
                 <div className="flex items-center text-sm">
                   <Calendar className="mr-2 h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className="text-gray-500">Issue Date:</span>
-                  <span className="ml-2 font-medium">{formatDate(selectedInvoice.issue_date)}</span>
+                  <span className="ml-2 font-medium">{safeFormatDate(selectedInvoice.issue_date)}</span>
                 </div>
                 
                 <div className="flex items-center text-sm">
                   <Calendar className="mr-2 h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className="text-gray-500">Due Date:</span>
-                  <span className="ml-2 font-medium">{formatDate(selectedInvoice.due_date)}</span>
+                  <span className="ml-2 font-medium">{safeFormatDate(selectedInvoice.due_date)}</span>
                 </div>
                 
                 <div className="flex items-center text-sm">
@@ -433,7 +445,7 @@ const InvoiceDetails = () => {
                 <div className="flex items-center text-sm">
                   <Calendar className="mr-2 h-4 w-4 text-green-600 flex-shrink-0" />
                   <span className="text-gray-600">Payment Date:</span>
-                  <span className="ml-2 font-medium">{formatDate(selectedInvoice.payment_date)}</span>
+                  <span className="ml-2 font-medium">{safeFormatDate(selectedInvoice.payment_date)}</span>
                 </div>
               )}
 

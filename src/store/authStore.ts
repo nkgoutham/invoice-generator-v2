@@ -8,7 +8,7 @@ interface AuthState {
   error: string | null;
   isAuthenticated: boolean;
   init: () => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -50,12 +50,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          set({ error: 'Invalid email or password' });
+          return false;
+        } else {
+          set({ error: error.message || 'Failed to sign in' });
+          return false;
+        }
+      }
       
       set({ user: data.user, isAuthenticated: true });
+      return true;
     } catch (error: any) {
       console.error('Sign in error:', error);
       set({ error: error.message || 'Failed to sign in' });
+      return false;
     } finally {
       set({ loading: false });
     }

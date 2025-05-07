@@ -23,12 +23,13 @@ const Login = () => {
   const watchEmail = watch('email', '');
   
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      await signIn(data.email, data.password);
+    const success = await signIn(data.email, data.password);
+    if (success) {
       toast.success('Logged in successfully!');
       navigate('/dashboard');
-    } catch (err) {
-      // Error is already handled in the auth store
+    } else {
+      // Login failed - the error message is already set in the store
+      // We don't need to do anything here as the error will be displayed in the UI
     }
   };
   
