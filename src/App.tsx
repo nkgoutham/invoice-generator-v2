@@ -11,6 +11,10 @@ import Layout from './components/layout/Layout';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
+const ExpensesList = lazy(() => import('./pages/expenses/ExpensesList'));
+const NewExpense = lazy(() => import('./pages/expenses/NewExpense'));
+const ExpenseDetails = lazy(() => import('./pages/expenses/ExpenseDetails'));
+const EditExpense = lazy(() => import('./pages/expenses/EditExpense'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Profile = lazy(() => import('./pages/profile/Profile'));
 const BankingInfo = lazy(() => import('./pages/profile/BankingInfo'));
@@ -169,6 +173,28 @@ function App() {
             <Route path="earnings" element={
               <Suspense fallback={<Loading />}>
                 <Earnings />
+              </Suspense>
+            } />
+            
+            {/* Expense Routes */}
+            <Route path="expenses" element={
+              <Suspense fallback={<Loading />}>
+                <ExpensesList />
+              </Suspense>
+            } />
+            <Route path="expenses/new" element={
+              <Suspense fallback={<Loading />}>
+                <NewExpense />
+              </Suspense>
+            } />
+            <Route path="expenses/:id" element={
+              <Suspense fallback={<Loading />}>
+                <ExpenseDetails />
+              </Suspense>
+            } />
+            <Route path="expenses/:id/edit" element={
+              <Suspense fallback={<Loading />}>
+                <EditExpense />
               </Suspense>
             } />
             

@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Users, 
-  FileText, 
+  FileText,
+  Receipt,
   DollarSign,
   User,
   LogOut,
@@ -56,6 +57,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
       name: 'Earnings',
       path: '/earnings',
       icon: <TrendingUp className="w-5 h-5" />,
+    },
+    {
+      name: 'Expenses',
+      path: '/expenses',
+      icon: <Receipt className="w-5 h-5" />,
     },
     {
       name: 'Profile',
