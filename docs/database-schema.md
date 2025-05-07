@@ -1,7 +1,7 @@
 # Database Schema Documentation
 
 ## Overview
-This document provides a comprehensive overview of the database schema for the easyinvoice application. The database is designed to support freelancers in managing clients, invoices, and payments.
+This document provides a comprehensive overview of the database schema for the easyinvoice application. The database is designed to support freelancers in managing clients, invoices, payments, and expenses.
 
 ## Tables
 
@@ -328,6 +328,71 @@ ALTER TABLE revenue_entries ENABLE ROW LEVEL SECURITY;
 - Users can view their own revenue entries
 - Users can delete their own revenue entries
 
+### expense_categories
+Stores categories for organizing expenses.
+
+```sql
+CREATE TABLE public.expense_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  color TEXT DEFAULT '#3B82F6'
+);
+
+CREATE INDEX expense_categories_user_id_idx ON public.expense_categories(user_id);
+
+ALTER TABLE expense_categories ENABLE ROW LEVEL SECURITY;
+```
+
+**RLS Policies:**
+- Users can insert their own expense categories
+- Users can update their own expense categories
+- Users can select their own expense categories
+- Users can delete their own expense categories
+
+### expenses
+Stores expense transactions with detailed tracking information.
+
+```sql
+CREATE TABLE public.expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  amount NUMERIC NOT NULL,
+  description TEXT NOT NULL,
+  category_id UUID REFERENCES expense_categories(id) ON DELETE SET NULL,
+  client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+  invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
+  is_recurring BOOLEAN DEFAULT false,
+  recurring_frequency TEXT CHECK (recurring_frequency IS NULL OR recurring_frequency IN ('weekly', 'monthly', 'quarterly', 'yearly')),
+  receipt_url TEXT,
+  notes TEXT,
+  is_billable BOOLEAN DEFAULT false,
+  is_reimbursable BOOLEAN DEFAULT false,
+  reimbursed BOOLEAN DEFAULT false,
+  payment_method TEXT CHECK (payment_method IS NULL OR payment_method IN ('cash', 'credit_card', 'bank_transfer', 'upi', 'other')),
+  currency TEXT NOT NULL DEFAULT 'INR' CHECK (currency IN ('INR', 'USD'))
+);
+
+CREATE INDEX expenses_user_id_idx ON public.expenses(user_id);
+CREATE INDEX expenses_date_idx ON public.expenses(date);
+CREATE INDEX expenses_category_id_idx ON public.expenses(category_id);
+CREATE INDEX expenses_client_id_idx ON public.expenses(client_id);
+CREATE INDEX expenses_invoice_id_idx ON public.expenses(invoice_id);
+CREATE INDEX expenses_currency_idx ON public.expenses(currency);
+
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+```
+
+**RLS Policies:**
+- Users can insert their own expenses
+- Users can update their own expenses
+- Users can select their own expenses
+- Users can delete their own expenses
+
 ## Database Triggers
 
 ### update_revenue_entries
@@ -335,6 +400,8 @@ Automatically updates revenue entries when an invoice is marked as paid or parti
 
 ### create_profile_on_signup
 Automatically creates a profile and banking info entry when a new user signs up.
+
+### create_default_expense_categories
 
 ## Relationships
 
@@ -349,6 +416,8 @@ Automatically creates a profile and banking info entry when a new user signs up.
 - **recurring_invoices** has a many-to-one relationship with both **users** and **clients**
 - **invoice_reminders** has a one-to-one relationship with **users**
 - **revenue_entries** has many-to-one relationships with **users**, **invoices**, and **clients**
+- **expense_categories** has a many-to-one relationship with **users**
+- **expenses** has many-to-one relationships with **users**, **expense_categories**, **clients**, and **invoices**
 - **currency_settings** has a one-to-one relationship with **users**
 
 ## Indexes
@@ -358,6 +427,14 @@ The database uses various indexes to optimize query performance:
 - Foreign key indexes where appropriate
 - Specialized indexes for frequently queried columns (e.g., status, payment_date)
 - Composite indexes for complex queries (e.g., payment_status_idx)
+
+For expenses, indexes are created on:
+- User ID for filtering by user
+- Date for time-based filtering
+- Category ID for category filtering
+- Client ID for client-specific expenses
+- Invoice ID for invoice-related expenses
+- Currency for currency-specific filtering
 
 ## Security
 The database implements row-level security (RLS) on most tables to ensure that users can only access their own data. Each table has specific policies that define the conditions under which users can select, insert, update, or delete records.
