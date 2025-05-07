@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { useExpenseStore } from '../../store/expenseStore';
 import { useClientStore } from '../../store/clientStore';
-import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, ExternalLink } from 'lucide-react';
+import { useInvoiceStore } from '../../store/invoiceStore';
+import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, ExternalLink, Plus, FileInvoice, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { formatCurrency } from '../../utils/helpers';
+import ExpenseCategoryForm from '../../components/expenses/ExpenseCategoryForm';
 
 interface ExpenseFormData {
   date: string;
@@ -45,11 +48,13 @@ const EditExpense = () => {
   const { user } = useAuthStore();
   const { selectedExpense, fetchExpense, updateExpense, categories, fetchCategories, uploadReceipt, loading } = useExpenseStore();
   const { clients, fetchClients } = useClientStore();
+  const { invoices, fetchInvoices } = useInvoiceStore();
   
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [formLoaded, setFormLoaded] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
   
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<ExpenseFormData>({
     defaultValues: {
@@ -68,18 +73,26 @@ const EditExpense = () => {
   const watchIsRecurring = watch('is_recurring');
   const watchIsBillable = watch('is_billable');
   const watchIsReimbursable = watch('is_reimbursable');
+  const watchClientId = watch('client_id');
   
   // Fetch expense, categories, and clients
   useEffect(() => {
     if (user) {
       fetchCategories(user.id);
       fetchClients(user.id);
+      fetchInvoices(user.id);
     }
     
     if (id) {
       fetchExpense(id);
     }
-  }, [user, id, fetchExpense, fetchCategories, fetchClients]);
+  }, [user, id, fetchExpense, fetchCategories, fetchClients, fetchInvoices]);
+  
+  // Filter invoices by selected client
+  const clientInvoices = invoices.filter(invoice => 
+    watchClientId && invoice.client_id === watchClientId && 
+    (invoice.status === 'sent' || invoice.status === 'overdue' || invoice.status === 'partially_paid')
+  );
   
   // Populate form when expense data is loaded
   useEffect(() => {
@@ -286,20 +299,29 @@ const EditExpense = () => {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Tag className="h-5 w-5 text-gray-400" />
                     </div>
-                    <select
-                      id="category_id"
-                      className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                        errors.category_id ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                      {...register('category_id', { required: 'Category is required' })}
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex">
+                      <select
+                        id="category_id"
+                        className={`block w-full pl-10 pr-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                          errors.category_id ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        {...register('category_id', { required: 'Category is required' })}
+                      >
+                        <option value="">Select a category</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowCategoryForm(true)}
+                        className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-500 hover:bg-gray-100"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   {errors.category_id && (
                     <p className="mt-1 text-sm text-red-600">{errors.category_id.message}</p>
@@ -528,8 +550,37 @@ const EditExpense = () => {
                       </select>
                     </div>
                     {errors.client_id && (
-                      <p className="mt-1 text-sm text-red-600">{errors.client_id.message}</p>
+                      <p className="mt-1 text-sm text-red-600">{errors.client_id.message}</p> 
                     )}
+                  </div>
+                )}
+                
+                {/* Invoice selection - only show if client is selected */}
+                {watchIsBillable && watchClientId && clientInvoices.length > 0 && (
+                  <div>
+                    <label htmlFor="invoice_id" className="block text-sm font-medium text-gray-700 mb-1">
+                      Associate with Invoice (optional)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FileInvoice className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <select
+                        id="invoice_id"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        {...register('invoice_id')}
+                      >
+                        <option value="">Select an invoice (optional)</option>
+                        {clientInvoices.map((invoice) => (
+                          <option key={invoice.id} value={invoice.id}>
+                            {invoice.invoice_number} - {formatCurrency(invoice.total, invoice.currency)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Associating with an invoice helps with tracking billable expenses
+                    </p>
                   </div>
                 )}
                 
@@ -578,8 +629,30 @@ const EditExpense = () => {
           </div>
         </form>
       </div>
-    </div>
-  );
-};
-
-export default EditExpense;
+      
+      {/* Category Form Modal */}
+      {showCategoryForm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowCategoryForm(false)}></div>
+            
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  type="button"
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => setShowCategoryForm(false)}
+                >
+                  <span className="sr-only">Close</span>
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <ExpenseCategoryForm />
+              
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:

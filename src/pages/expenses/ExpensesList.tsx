@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useExpenseStore, Expense, ExpenseCategory } from '../../store/expenseStore';
+import { useExpenseStore, Expense } from '../../store/expenseStore';
 import { 
   PlusCircle, 
   Search, 
@@ -10,9 +10,11 @@ import {
   DollarSign,
   Calendar,
   Tag,
-  ArrowDownUp
+  ArrowDownUp,
+  Plus
 } from 'lucide-react';
 import ExpenseItem from '../../components/expenses/ExpenseItem';
+import ExpenseCategoryForm from '../../components/expenses/ExpenseCategoryForm';
 import { formatCurrency } from '../../utils/helpers';
 
 const ExpensesList = () => {
@@ -25,6 +27,7 @@ const ExpensesList = () => {
   const [sortBy, setSortBy] = useState('date-desc');
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   
   // Calculate total expenses
   const [totalAmount, setTotalAmount] = useState({ inr: 0, usd: 0 });
@@ -147,16 +150,25 @@ const ExpensesList = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold text-neutral-900">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent-600 to-accent-500">
-            Expenses
+            Expenses 
           </span>
         </h1>
-        <Link
-          to="/expenses/new"
-          className="w-full sm:w-auto btn btn-primary btn-md"
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Expense
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Link
+            to="/expenses/new"
+            className="w-full sm:w-auto btn btn-primary btn-md"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Expense
+          </Link>
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="w-full sm:w-auto btn btn-secondary btn-md"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Manage Categories
+          </button>
+        </div>
       </div>
       
       {error && (
@@ -313,6 +325,44 @@ const ExpensesList = () => {
               </Link>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowCategoryModal(false)}></div>
+            
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  type="button"
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <ExpenseCategoryForm />
+              
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
