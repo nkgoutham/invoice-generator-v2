@@ -8,7 +8,7 @@ const NotFound = () => {
         <img 
           src="/full_logo.png" 
           alt="InvoicePro Logo" 
-          className="h-16 mx-auto mb-6"
+          className="h-24 mx-auto mb-6"
         />
         <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mt-6">
           <FileQuestion className="h-10 w-10 text-blue-600" />

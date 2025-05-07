@@ -35,7 +35,7 @@ const Register = () => {
         <img 
           src="/full_logo.png" 
           alt="InvoicePro Logo" 
-          className="h-16 mx-auto mb-6"
+          className="h-24 mx-auto mb-6"
         />
         <h2 className="text-center text-2xl font-bold tracking-tight text-neutral-900">
           Create your account

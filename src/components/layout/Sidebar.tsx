@@ -85,13 +85,13 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
       <div className="h-16 sm:h-18 flex items-center px-6 border-b border-neutral-200/80">
         <Link 
           to="/" 
-          className="flex items-center"
+          className="flex items-center justify-center w-full"
           onClick={handleClick}
         >
           <img 
             src="/full_logo.png" 
             alt="InvoicePro Logo" 
-            className="h-10 object-contain"
+            className="h-12 sm:h-14 object-contain"
           />
         </Link>
       </div>
