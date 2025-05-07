@@ -27,10 +27,11 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Changed from single() to maybeSingle() to handle case when no profile exists
       
       if (error) throw error;
       
+      // If no profile exists, we'll get null which is handled by our state
       set({ profile: data as Profile });
     } catch (error: any) {
       console.error('Fetch profile error:', error);
@@ -48,7 +49,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         .from('banking_info')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Also changed to maybeSingle() for consistency
       
       if (error) throw error;
       
