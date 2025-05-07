@@ -418,3 +418,116 @@ easyinvoice is a comprehensive invoicing application designed specifically for f
 - Team collaboration
 - Dark mode support
 - Customizable dashboard widgets
+
+## Expense Tracking Module
+
+### Overview
+The expense tracking module allows freelancers to record, categorize, and analyze their business expenses. It supports both billable and non-billable expenses, with features for receipt management, expense categorization, and comprehensive reporting.
+
+### Core Functionalities
+
+#### 1. Expense Management
+
+##### Expense Recording
+- Add new expenses with detailed information
+- Track expense date, amount, and description
+- Support for multiple currencies (INR, USD)
+- Attach receipts to expenses (images or PDFs)
+- Add notes and additional details
+
+##### Expense Categorization
+- Assign expenses to customizable categories
+- Default categories provided for common expense types
+- Color-coding for visual organization
+- Category-based filtering and reporting
+
+##### Expense Types
+- Regular expenses
+- Recurring expenses (weekly, monthly, quarterly, yearly)
+- Billable expenses (linked to clients)
+- Reimbursable expenses with tracking
+
+##### Payment Methods
+- Track payment method used (cash, credit card, bank transfer, UPI, other)
+- Filter expenses by payment method
+
+#### 2. Client and Invoice Integration
+
+##### Client Association
+- Link expenses to specific clients
+- Track billable expenses by client
+- Include expenses in client invoices
+
+##### Invoice Integration
+- Associate expenses with specific invoices
+- Track which expenses have been invoiced
+- Include billable expenses in new invoices
+
+#### 3. Expense Analysis and Reporting
+
+##### Expense Reports
+- Generate comprehensive expense reports
+- Filter by date range, category, client, and more
+- Export reports to CSV format
+
+##### Visual Analysis
+- Category breakdown charts
+- Client expense distribution
+- Time-based expense trends
+- Currency-specific analysis
+
+##### Summary Statistics
+- Total expenses by category
+- Billable vs. non-billable expenses
+- Reimbursable expense tracking
+- Multi-currency expense totals
+
+### User Interface
+
+#### Expense List View
+- Searchable and filterable expense list
+- Quick access to expense details
+- Inline actions (edit, delete)
+- Receipt preview
+
+#### Expense Detail View
+- Comprehensive expense information display
+- Receipt viewing and management
+- Related client and invoice information
+- Edit and delete actions
+
+#### Expense Entry Form
+- Intuitive expense entry interface
+- Receipt upload with preview
+- Dynamic fields based on expense type
+- Client and category selection
+
+#### Category Management
+- Create, edit, and delete expense categories
+- Color selection for visual organization
+- Category description and metadata
+
+#### Expense Reports and Analysis
+- Interactive charts and visualizations
+- Customizable report parameters
+- Export functionality
+- Summary statistics and insights
+
+### Technical Implementation
+
+#### Data Model
+- Expense entity with comprehensive attributes
+- Category entity with customization options
+- Relationships to clients and invoices
+- Support for file storage (receipts)
+
+#### Security
+- Row-level security for user data isolation
+- Secure file storage for receipts
+- Permission-based access control
+
+#### Performance Considerations
+- Optimized queries for expense filtering
+- Efficient file handling for receipts
+- Indexed fields for faster searching
+- Pagination for large expense lists
