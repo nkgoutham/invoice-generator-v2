@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useExpenseStore, Expense } from '../../store/expenseStore';
 import { 
-  PlusCircle, 
+  PlusCircle,
+  BarChart2,
   Search, 
   Filter, 
   RefreshCw, 
@@ -160,6 +161,13 @@ const ExpensesList = () => {
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Expense
+          </Link>
+          <Link
+            to="/expenses/reports"
+            className="w-full sm:w-auto btn btn-secondary btn-md"
+          >
+            <BarChart2 className="mr-2 h-4 w-4" />
+            Reports & Analysis
           </Link>
           <button
             onClick={() => setShowCategoryModal(true)}

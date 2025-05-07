@@ -11,6 +11,7 @@ import Layout from './components/layout/Layout';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
+const ExpenseReports = lazy(() => import('./pages/expenses/ExpenseReports'));
 const ExpensesList = lazy(() => import('./pages/expenses/ExpensesList'));
 const NewExpense = lazy(() => import('./pages/expenses/NewExpense'));
 const ExpenseDetails = lazy(() => import('./pages/expenses/ExpenseDetails'));
@@ -190,6 +191,11 @@ function App() {
             <Route path="expenses/:id" element={
               <Suspense fallback={<Loading />}>
                 <ExpenseDetails />
+              </Suspense>
+            } />
+            <Route path="expenses/reports" element={
+              <Suspense fallback={<Loading />}>
+                <ExpenseReports />
               </Suspense>
             } />
             <Route path="expenses/:id/edit" element={
