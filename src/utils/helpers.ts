@@ -1,13 +1,23 @@
 import { format } from 'date-fns';
 import { InvoiceFormData } from '../types/invoice';
 
-export const formatCurrency = (amount: number, currency = 'INR'): string => {
+export const formatCurrency = (amount: number, currency = 'INR', compact = false): string => {
   const currencyOptions: Record<string, { locale: string, currency: string }> = {
     INR: { locale: 'en-IN', currency: 'INR' },
     USD: { locale: 'en-US', currency: 'USD' }
   };
   
   const options = currencyOptions[currency] || currencyOptions.INR;
+
+  if (compact && amount > 1000) {
+    // For chart labels, use compact notation
+    return new Intl.NumberFormat(options.locale, {
+      style: 'currency',
+      currency: options.currency,
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(amount);
+  }
   
   return new Intl.NumberFormat(options.locale, {
     style: 'currency',
