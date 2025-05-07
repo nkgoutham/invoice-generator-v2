@@ -4,7 +4,15 @@ import { useForm, Controller } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { useExpenseStore, ExpenseCategory } from '../../store/expenseStore';
 import { useClientStore } from '../../store/clientStore';
-import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2 }import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, Plus, FileInput as FileInvoice } from 'lucide-react'  description: string;
+import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, Plus, FileInput as FileInvoice } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import ExpenseCategoryForm from '../../components/expenses/ExpenseCategoryForm';
+import toast from 'react-hot-toast';
+
+interface ExpenseFormData {
+  date: string;
+  amount: number;
+  description: string;
   category_id: string;
   client_id?: string;
   invoice_id?: string;
@@ -35,13 +43,16 @@ const RECURRING_FREQUENCIES = [
 
 const NewExpense = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
-  const { createExpense, categories, fetchCategories, uploadReceipt, loading } = useExpenseStore();
-  const { clients, fetchClients } = useClientStore();
+  const { createExpense, categories, fetchCategories, createCategory, uploadReceipt, loading } = useExpenseStore();
+  const { clients, fetchClients, fetchInvoices } = useClientStore();
   
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
   
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<ExpenseFormData>({
     defaultValues: {
@@ -60,13 +71,51 @@ const NewExpense = () => {
   const watchIsRecurring = watch('is_recurring');
   const watchIsBillable = watch('is_billable');
   const watchIsReimbursable = watch('is_reimbursable');
+  const watchClientId = watch('client_id');
   
   useEffect(() => {
     if (user) {
       fetchCategories(user.id);
       fetchClients(user.id);
+      
+      // Check for URL parameters
+      const clientId = searchParams.get('client');
+      const invoiceId = searchParams.get('invoice');
+      
+      if (clientId) {
+        setValue('client_id', clientId);
+        setValue('is_billable', true);
+      }
+      
+      if (invoiceId) {
+        setValue('invoice_id', invoiceId);
+      }
     }
-  }, [user, fetchCategories, fetchClients]);
+  }, [user, fetchCategories, fetchClients, searchParams, setValue]);
+  
+  // Fetch invoices when client changes
+  useEffect(() => {
+    if (watchIsBillable && watchClientId) {
+      const fetchClientInvoices = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('invoices')
+            .select('*')
+            .eq('client_id', watchClientId)
+            .in('status', ['sent', 'overdue', 'partially_paid'])
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          
+          setInvoices(data || []);
+        } catch (error) {
+          console.error('Error fetching invoices:', error);
+        }
+      };
+      
+      fetchClientInvoices();
+    }
+  }, [watchIsBillable, watchClientId]);
   
   const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -245,12 +294,24 @@ const NewExpense = () => {
                       {...register('category_id', { required: 'Category is required' })}
                     >
                       <option value="">Select a category</option>
-                      {categories.map((category) => (
+                      {categories.sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
                       ))}
                     </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center">
+                      <button
+                        type="button"
+                        className="h-full px-2 text-gray-500 hover:text-blue-500"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowCategoryModal(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   {errors.category_id && (
                     <p className="mt-1 text-sm text-red-600">{errors.category_id.message}</p>
@@ -447,7 +508,7 @@ const NewExpense = () => {
                         <Building className="h-5 w-5 text-gray-400" />
                       </div>
                       <select
-                        id="client_id"
+                        id="client_id" 
                         className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                           errors.client_id ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -466,6 +527,35 @@ const NewExpense = () => {
                     {errors.client_id && (
                       <p className="mt-1 text-sm text-red-600">{errors.client_id.message}</p>
                     )}
+                  </div>
+                )}
+                
+                {/* Invoice selection for billable expenses */}
+                {watchIsBillable && watchClientId && invoices.length > 0 && (
+                  <div>
+                    <label htmlFor="invoice_id" className="block text-sm font-medium text-gray-700 mb-1">
+                      Invoice (Optional)
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FileInvoice className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <select
+                        id="invoice_id"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        {...register('invoice_id')}
+                      >
+                        <option value="">Select an invoice</option>
+                        {invoices.map((invoice) => (
+                          <option key={invoice.id} value={invoice.id}>
+                            {invoice.invoice_number} - {new Date(invoice.issue_date).toLocaleDateString()} ({invoice.status})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Associate this expense with an invoice for tracking
+                    </p>
                   </div>
                 )}
                 
@@ -514,6 +604,44 @@ const NewExpense = () => {
           </div>
         </form>
       </div>
+      
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setShowCategoryModal(false)}></div>
+            
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  type="button"
+                  className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <ExpenseCategoryForm />
+              
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
