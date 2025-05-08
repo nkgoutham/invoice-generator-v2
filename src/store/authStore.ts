@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
 
-      // Ultra-simplified signup with minimal options to avoid errors
+      // Minimal signup with NO OPTIONS to avoid any potential issues
       const { data, error } = await supabase.auth.signUp({
         email,
         password
