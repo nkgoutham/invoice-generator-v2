@@ -526,14 +526,9 @@ const NewInvoice = () => {
       let invoiceItems = [];
       
       if (formValues.engagement_type === 'milestone' && formValues.milestones) {
-        // For milestone-based, create an item for each milestone
-        invoiceItems = formValues.milestones.map(milestone => ({
-          description: null, // Not needed for milestones
-          quantity: 1,
-          rate: parseFloat(milestone.amount?.toString() || '0'),
-          amount: parseFloat(milestone.amount?.toString() || '0'),
-          milestone_name: milestone.name
-        }));
+        // For milestone-based, pass the milestones directly
+        // The store will handle the formatting
+        invoiceItems = formValues.milestones;
       } else if (formValues.engagement_type === 'project' || formValues.engagement_type === 'retainership') {
         // For project or retainership, use the single item
         invoiceItems = [{

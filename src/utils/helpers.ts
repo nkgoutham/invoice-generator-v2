@@ -89,7 +89,13 @@ export const calculateInvoiceTotals = (
   
   if (engagementType === 'milestone' && formData.milestones) {
     calculatedSubtotal = formData.milestones.reduce((sum, milestone) => {
-      const amount = parseFloat(milestone.amount?.toString() || '0') || 0;
+      // Handle both number and string types for amount
+      let amount = 0;
+      if (typeof milestone.amount === 'number') {
+        amount = milestone.amount;
+      } else if (milestone.amount) {
+        amount = parseFloat(milestone.amount.toString()) || 0;
+      }
       return sum + amount;
     }, 0);
   } else if ((engagementType === 'retainership' || engagementType === 'project') && formData.items && formData.items.length > 0) {

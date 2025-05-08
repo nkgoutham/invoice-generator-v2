@@ -183,13 +183,13 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         
         if (invoiceData.engagement_type === 'milestone') {
           // For milestone-based invoices
-          formattedItems = (invoiceItems as Array<{name: string, amount: number}>).map(milestone => ({
+          formattedItems = (invoiceItems as any[]).map(milestone => ({
             invoice_id: invoice.id,
-            milestone_name: milestone.name,
+            milestone_name: typeof milestone.name === 'string' ? milestone.name : milestone.milestone_name || 'Milestone',
             description: null, // Not required for milestones
             quantity: 1,
-            rate: milestone.amount,
-            amount: milestone.amount
+            rate: typeof milestone.amount === 'number' ? milestone.amount : parseFloat(milestone.amount) || 0,
+            amount: typeof milestone.amount === 'number' ? milestone.amount : parseFloat(milestone.amount) || 0
           }));
         } else if (invoiceData.engagement_type === 'retainership') {
           // For retainership-based invoices
