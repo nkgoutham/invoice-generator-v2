@@ -73,13 +73,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
 
-      // Simplified signup with minimal options to avoid errors
+      // Ultra-simplified signup with minimal options to avoid errors
       const { data, error } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`,
-        }
+        password
       });
       
       if (error) {
@@ -103,7 +100,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         return false;
       }
       
-      // Don't set the user in the store on signup - make them sign in
       set({ 
         error: null,
         loading: false
