@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
 
-      // Important: Keep auth signup as simple as possible
+      // Simplified signup with minimal options to avoid errors
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
