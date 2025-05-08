@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FileText, Mail, Lock, ArrowRight } from 'lucide-react';
+import { FileText, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
@@ -32,6 +32,13 @@ const Login = () => {
       // We don't need to do anything here as the error will be displayed in the UI
     }
   };
+
+  // Check if the error message indicates the user doesn't exist
+  const isUserNotFoundError = error && (
+    error.includes('Invalid login credentials') || 
+    error.includes('Email not confirmed') ||
+    error.includes('Invalid email or password')
+  );
   
   const handleForgotPassword = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -84,11 +91,21 @@ const Login = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="card px-4 py-6 sm:px-10 sm:py-8">
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center animate-fade-in">
-              <svg className="h-5 w-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              {error}
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg animate-fade-in">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 mr-2 text-red-500 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
+              
+              {isUserNotFoundError && (
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <p className="text-sm font-medium">Hmm, we don't recognize those credentials! 🤔</p>
+                  <p className="mt-1 text-sm">
+                    We're working on mind-reading technology, but it's not quite there yet. 
+                    Please <Link to="/register" className="font-semibold underline">create an account first</Link> if you haven't already.
+                  </p>
+                </div>
+              )}
             </div>
           )}
           
@@ -255,7 +272,7 @@ const Login = () => {
                 <div className="text-sm text-right">
                   <a 
                     href="#" 
-                    className="font-medium text-accent-500 hover:text-accent-600 transition-colors"
+                    className="font-medium text-accent-500 hover:text-accent-600 transition-colors inline-flex items-center"
                     onClick={handleForgotPassword}
                   >
                     Forgot your password?
@@ -283,6 +300,21 @@ const Login = () => {
                 </button>
               </div>
             </form>
+            
+            {/* New user prompt */}
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-700 font-medium">New to InvoicePro?</p>
+              <p className="mt-1 text-sm text-blue-600">
+                Create an account to start managing your invoices and expenses with ease.
+              </p>
+              <Link 
+                to="/register" 
+                className="mt-3 inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-800"
+              >
+                Create an account
+                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </div>
           )}
         </div>
       </div>

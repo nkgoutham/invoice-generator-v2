@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          set({ error: 'Invalid email or password' });
+          set({ error: 'We couldn\'t find an account with these credentials.' });
           return false;
         } else {
           set({ error: error.message || 'Failed to sign in' });
@@ -82,11 +82,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       
       if (error) throw error;
       
-      // Note: User will need to verify email if enabled in Supabase
-      set({ user: data.user });
+      // Note: User will need to verify email if enabled in Supabase (it's disabled in our app)
+      set({ 
+        user: data.user,
+        error: null // Clear any previous errors
+      });
+      
+      return true;
     } catch (error: any) {
       console.error('Sign up error:', error);
       set({ error: error.message || 'Failed to sign up' });
+      return false;
     } finally {
       set({ loading: false });
     }
