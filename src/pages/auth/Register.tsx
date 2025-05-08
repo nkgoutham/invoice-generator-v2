@@ -21,11 +21,14 @@ const Register = () => {
   
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await signUp(data.email, data.password);
-      toast.success('Account created successfully! Now you can sign in.');
-      navigate('/login');
+      const success = await signUp(data.email, data.password);
+      if (success) {
+        toast.success('Account created successfully! Please sign in to continue.');
+        navigate('/login');
+      }
     } catch (err) {
       // Error is already handled in the auth store
+      console.error('Registration error:', err);
     }
   };
   

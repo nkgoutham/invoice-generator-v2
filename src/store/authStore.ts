@@ -33,8 +33,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
-      // Don't set error here to avoid showing errors on initial load
-      // Just log out the user if there's a session issue
       set({ user: null, isAuthenticated: false });
     } finally {
       set({ loading: false });
@@ -75,23 +73,56 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
       
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', email)
+        .single();
+
+      if (existingUser) {
+        set({ error: 'This email is already registered. Please sign in instead.' });
+        return false;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`
+        }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Signup error details:', error);
+        
+        // Provide user-friendly error messages
+        if (error.message.includes('unique constraint')) {
+          set({ error: 'This email is already registered. Please sign in instead.' });
+        } else if (error.message.includes('weak password')) {
+          set({ error: 'Please choose a stronger password.' });
+        } else if (error.message.includes('invalid email')) {
+          set({ error: 'Please enter a valid email address.' });
+        } else {
+          set({ error: 'Unable to create your account at this time. Please try again later.' });
+        }
+        return false;
+      }
       
-      // Note: User will need to verify email if enabled in Supabase (it's disabled in our app)
+      if (!data.user) {
+        set({ error: 'Unable to create your account. Please try again.' });
+        return false;
+      }
+      
       set({ 
         user: data.user,
-        error: null // Clear any previous errors
+        error: null
       });
       
       return true;
     } catch (error: any) {
       console.error('Sign up error:', error);
-      set({ error: error.message || 'Failed to sign up' });
+      set({ error: 'Unable to create your account at this time. Please try again later.' });
       return false;
     } finally {
       set({ loading: false });
@@ -107,7 +138,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, isAuthenticated: false });
     } catch (error: any) {
       console.error('Sign out error:', error);
-      // Even if there's an error on sign out, reset the user state
       set({ user: null, isAuthenticated: false, error: null });
     } finally {
       set({ loading: false });
@@ -118,7 +148,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      // Include the site URL to redirect back to after reset
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
@@ -127,7 +156,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Reset password error:', error);
       set({ error: error.message || 'Failed to reset password' });
-      throw error; // Re-throw to handle in component
+      throw error;
     } finally {
       set({ loading: false });
     }
