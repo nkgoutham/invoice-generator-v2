@@ -22,7 +22,7 @@ const Register = () => {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       const success = await signUp(data.email, data.password);
-      if (success) {
+      if (success === true) {
         toast.success('Account created successfully! Please sign in to continue.');
         navigate('/login');
       }

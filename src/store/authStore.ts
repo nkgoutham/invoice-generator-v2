@@ -72,18 +72,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   signUp: async (email, password) => {
     try {
       set({ loading: true, error: null });
-      
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', email)
-        .single();
-
-      if (existingUser) {
-        set({ error: 'This email is already registered. Please sign in instead.' });
-        return false;
-      }
 
       const { data, error } = await supabase.auth.signUp({
         email,
