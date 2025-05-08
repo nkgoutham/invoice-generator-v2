@@ -73,16 +73,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
 
-      // Important: Use signUp without email confirmation
-      // This allows direct sign-up without verification steps
+      // Important: Keep auth signup as simple as possible
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          // Don't require email confirmation
           emailRedirectTo: `${window.location.origin}/login`,
-          // Don't store additional user metadata that might confuse the trigger
-          data: {}
         }
       });
       
@@ -108,7 +104,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       
       // Don't set the user in the store on signup - make them sign in
-      // This is to keep the flow clean, especially if email confirmation is enabled later
       set({ 
         error: null,
         loading: false
