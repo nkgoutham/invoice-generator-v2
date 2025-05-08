@@ -172,149 +172,151 @@ const Login = () => {
               </p>
             </div>
           ) : (
-            <form className="space-y-6 animate-fade-in" onSubmit={handleSubmit(onSubmit)}>
-              <div>
-                <label htmlFor="email" className="form-label">
-                  Email address
-                </label>
-                <div className="mt-1 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-neutral-400 group-focus-within:text-accent-500 transition-colors duration-150" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    className={`form-input pl-10 ${
-                      errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/50' : ''
-                    }`}
-                    placeholder="you@example.com"
-                    {...register('email', { 
-                      required: 'Email is required',
-                      pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: 'Invalid email address'
-                      }
-                    })}
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-1.5 text-sm text-red-600 flex items-center">
-                    <svg className="h-3 w-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
-                    </svg>
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="password" className="form-label">
-                  Password
-                </label>
-                <div className="mt-1 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-neutral-400 group-focus-within:text-accent-500 transition-colors duration-150" />
-                  </div>
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    className={`form-input pl-10 ${
-                      errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/50' : ''
-                    }`}
-                    placeholder="••••••••"
-                    {...register('password', { 
-                      required: 'Password is required',
-                      minLength: {
-                        value: 6,
-                        message: 'Password must be at least 6 characters'
-                      }
-                    })}
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-neutral-400 hover:text-neutral-600 focus:outline-none transition-colors"
-                    >
-                      {showPassword ? (
-                        <span className="text-xs font-medium">Hide</span>
-                      ) : (
-                        <span className="text-xs font-medium">Show</span>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {errors.password && (
-                  <p className="mt-1.5 text-sm text-red-600 flex items-center">
-                    <svg className="h-3 w-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
-                    </svg>
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-accent-500 focus:ring-accent-500 border-neutral-300 rounded transition-colors"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-neutral-700">
-                    Remember me
+            <>
+              <form className="space-y-6 animate-fade-in" onSubmit={handleSubmit(onSubmit)}>
+                <div>
+                  <label htmlFor="email" className="form-label">
+                    Email address
                   </label>
-                </div>
-
-                <div className="text-sm text-right">
-                  <a 
-                    href="#" 
-                    className="font-medium text-accent-500 hover:text-accent-600 transition-colors inline-flex items-center"
-                    onClick={handleForgotPassword}
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full btn btn-primary btn-md group"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <div className="h-4 w-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Signing in...
-                    </span>
-                  ) : (
-                    <>
-                      Sign in
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </>
+                  <div className="mt-1 relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-neutral-400 group-focus-within:text-accent-500 transition-colors duration-150" />
+                    </div>
+                    <input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      className={`form-input pl-10 ${
+                        errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-500/50' : ''
+                      }`}
+                      placeholder="you@example.com"
+                      {...register('email', { 
+                        required: 'Email is required',
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Invalid email address'
+                        }
+                      })}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="mt-1.5 text-sm text-red-600 flex items-center">
+                      <svg className="h-3 w-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+                      </svg>
+                      {errors.email.message}
+                    </p>
                   )}
-                </button>
+                </div>
+
+                <div>
+                  <label htmlFor="password" className="form-label">
+                    Password
+                  </label>
+                  <div className="mt-1 relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-neutral-400 group-focus-within:text-accent-500 transition-colors duration-150" />
+                    </div>
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      className={`form-input pl-10 ${
+                        errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-500/50' : ''
+                      }`}
+                      placeholder="••••••••"
+                      {...register('password', { 
+                        required: 'Password is required',
+                        minLength: {
+                          value: 6,
+                          message: 'Password must be at least 6 characters'
+                        }
+                      })}
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-neutral-400 hover:text-neutral-600 focus:outline-none transition-colors"
+                      >
+                        {showPassword ? (
+                          <span className="text-xs font-medium">Hide</span>
+                        ) : (
+                          <span className="text-xs font-medium">Show</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-1.5 text-sm text-red-600 flex items-center">
+                      <svg className="h-3 w-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+                      </svg>
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-accent-500 focus:ring-accent-500 border-neutral-300 rounded transition-colors"
+                    />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm text-neutral-700">
+                      Remember me
+                    </label>
+                  </div>
+
+                  <div className="text-sm text-right">
+                    <a 
+                      href="#" 
+                      className="font-medium text-accent-500 hover:text-accent-600 transition-colors inline-flex items-center"
+                      onClick={handleForgotPassword}
+                    >
+                      Forgot your password?
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full btn btn-primary btn-md group"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center">
+                        <div className="h-4 w-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Signing in...
+                      </span>
+                    ) : (
+                      <>
+                        Sign in
+                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* New user prompt */}
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700 font-medium">New to InvoicePro?</p>
+                <p className="mt-1 text-sm text-blue-600">
+                  Create an account to start managing your invoices and expenses with ease.
+                </p>
+                <Link 
+                  to="/register" 
+                  className="mt-3 inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-800"
+                >
+                  Create an account
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
               </div>
-            </form>
-            
-            {/* New user prompt */}
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-700 font-medium">New to InvoicePro?</p>
-              <p className="mt-1 text-sm text-blue-600">
-                Create an account to start managing your invoices and expenses with ease.
-              </p>
-              <Link 
-                to="/register" 
-                className="mt-3 inline-flex items-center text-sm font-medium text-blue-700 hover:text-blue-800"
-              >
-                Create an account
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </div>
+            </>
           )}
         </div>
       </div>
