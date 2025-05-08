@@ -9,7 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   init: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<boolean>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
@@ -73,11 +73,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
 
+      // Explicitly disable email confirmation
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: {
+            email: email // Store email in user metadata as well
+          }
         }
       });
       
@@ -92,7 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         } else if (error.message.includes('invalid email')) {
           set({ error: 'Please enter a valid email address.' });
         } else {
-          set({ error: 'Unable to create your account at this time. Please try again later.' });
+          set({ error: error.message || 'Unable to create account. Please try again later.' });
         }
         return false;
       }
@@ -102,15 +106,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         return false;
       }
       
+      // Don't set the user in the store on signup - make them sign in
+      // This is to keep the flow clean, especially if email confirmation is enabled later
       set({ 
-        user: data.user,
-        error: null
+        error: null,
+        loading: false
       });
       
       return true;
     } catch (error: any) {
       console.error('Sign up error:', error);
-      set({ error: 'Unable to create your account at this time. Please try again later.' });
+      set({ error: error.message || 'Unable to create your account. Please try again later.' });
       return false;
     } finally {
       set({ loading: false });
