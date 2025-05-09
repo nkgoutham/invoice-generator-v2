@@ -58,12 +58,12 @@ const Dashboard = () => {
   // Date range for chart
   const [startDate, setStartDate] = useState<Date>(() => {
     const date = new Date();
-    date.setMonth(date.getMonth() - 11);
+    date.setMonth(date.getMonth() - 2); // Default to 3 months (current month + 2 previous)
     return date;
   });
   
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [timeRange, setTimeRange] = useState<string>("12");
+  const [timeRange, setTimeRange] = useState<string>("3");
   
   useEffect(() => {
     const loadData = async () => {
@@ -482,9 +482,9 @@ const Dashboard = () => {
               value={timeRange}
               onChange={(e) => handleTimeRangeChange(e.target.value)}
             >
-              <option value="12">Last 12 months</option>
-              <option value="6">Last 6 months</option>
               <option value="3">Last 3 months</option>
+              <option value="6">Last 6 months</option>
+              <option value="12">Last 12 months</option>
               <option value="24">Last 24 months</option>
             </select>
           </div>
