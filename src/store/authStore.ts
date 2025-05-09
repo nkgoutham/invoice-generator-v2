@@ -9,6 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   init: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
@@ -62,6 +63,56 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Sign in error:', error);
       set({ error: error.message || 'Failed to sign in' });
+      return false;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  
+  signUp: async (email, password) => {
+    try {
+      set({ loading: true, error: null });
+
+      // Step 1: Create the user in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('Signup error details:', error);
+        
+        // Provide user-friendly error messages
+        if (error.message.includes('unique constraint')) {
+          set({ error: 'This email is already registered. Please sign in instead.' });
+        } else if (error.message.includes('weak password')) {
+          set({ error: 'Please choose a stronger password.' });
+        } else if (error.message.includes('invalid email')) {
+          set({ error: 'Please enter a valid email address.' });
+        } else {
+          set({ error: error.message || 'Unable to create account. Please try again later.' });
+        }
+        return false;
+      }
+      
+      if (!data.user) {
+        set({ error: 'Unable to create your account. Please try again.' });
+        return false;
+      }
+      
+      // Note: We don't need to manually create a profile here because
+      // a database trigger will automatically create the profile, banking info,
+      // and default expense categories when a new user is created
+      
+      set({ 
+        error: null,
+        loading: false
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      set({ error: error.message || 'Unable to create your account. Please try again later.' });
       return false;
     } finally {
       set({ loading: false });

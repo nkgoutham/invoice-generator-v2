@@ -10,6 +10,7 @@ import Layout from './components/layout/Layout';
 // Lazy loaded pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Profile = lazy(() => import('./pages/profile/Profile'));
 const BankingInfo = lazy(() => import('./pages/profile/BankingInfo'));
@@ -96,6 +97,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected Routes */}
