@@ -91,6 +91,10 @@ button, a {
     @apply bg-red-500 hover:bg-red-600 text-white focus:ring-red-400/50 shadow-button;
   }
   
+  .btn-link {
+    @apply bg-transparent border-none shadow-none underline;
+  }
+  
   .btn-sm {
     @apply px-3 py-1.5 text-sm;
   }

@@ -5,10 +5,10 @@ import { useAuthStore } from '../../store/authStore';
 import { useInvoiceStore } from '../../store/invoiceStore';
 import { useClientStore } from '../../store/clientStore';
 import { useProfileStore } from '../../store/profileStore';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { calculateInvoiceTotals } from '../../utils/helpers';
-import { EngagementModel, Client } from '../../lib/supabase';
+import { Client, EngagementModel } from '../../lib/supabase';
 import { InvoiceFormData, InvoicePreviewData } from '../../types/invoice';
 import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 
@@ -33,7 +33,7 @@ const PastInvoiceForm = () => {
   
   const { user } = useAuthStore();
   const { clients, fetchClients, fetchEngagementModel, getClient } = useClientStore();
-  const { createInvoice, generateInvoiceNumber, loading } = useInvoiceStore();
+  const { createInvoice, loading } = useInvoiceStore();
   const { profile, bankingInfo, fetchProfile, fetchBankingInfo } = useProfileStore();
   
   const [subtotal, setSubtotal] = useState(0);
@@ -51,8 +51,8 @@ const PastInvoiceForm = () => {
     register, 
     control, 
     handleSubmit, 
-    setValue,
-    watch,
+    setValue, 
+    watch, 
     getValues,
     formState: { errors } 
   } = useForm<InvoiceFormData>({
@@ -65,7 +65,6 @@ const PastInvoiceForm = () => {
       status: 'paid', // Default to paid for past invoices
       currency: 'INR',
       tax_percentage: 0,
-      reverse_calculation: false,
       items: [{ description: '', quantity: 1, rate: 0, amount: 0 }],
       milestones: [{ name: 'Milestone 1', amount: 0 }],
       engagement_type: 'service'
@@ -88,7 +87,6 @@ const PastInvoiceForm = () => {
   const watchEngagementType = watch('engagement_type');
   const watchMilestones = watch('milestones', []);
   const watchTaxPercentage = watch('tax_percentage');
-  const watchReverseCalculation = watch('reverse_calculation');
   const watchNotes = watch('notes');
   const watchPaymentDate = watch('payment_date');
   const watchPaymentMethod = watch('payment_method');
@@ -138,7 +136,7 @@ const PastInvoiceForm = () => {
   }, [setValue, calculateTotals]);
   
   // Update tax settings
-  const updateTaxSettings = useCallback(() => {
+  const updateTaxSettings = useCallback((taxPercentage: number) => {
     setTimeout(() => calculateTotals(), 0);
   }, [calculateTotals]);
   
@@ -150,7 +148,7 @@ const PastInvoiceForm = () => {
     if (watchCurrency !== selectedCurrency) {
       setSelectedCurrency(watchCurrency);
     }
-  }, [watchCurrency, selectedCurrency, watchEngagementType, watchTaxPercentage, watchReverseCalculation, calculateTotals]);
+  }, [watchCurrency, selectedCurrency, watchEngagementType, watchTaxPercentage, calculateTotals]);
   
   // Load initial data
   useEffect(() => {
@@ -327,7 +325,6 @@ const PastInvoiceForm = () => {
         currency: formValues.currency,
         engagement_type: formValues.engagement_type,
         tax_percentage: formValues.tax_percentage,
-        reverse_calculation: formValues.reverse_calculation,
         payment_date: formValues.payment_date,
         payment_method: formValues.payment_method,
         payment_reference: formValues.payment_reference
@@ -340,16 +337,16 @@ const PastInvoiceForm = () => {
         invoiceItems = formValues.milestones.map(milestone => ({
           description: null,
           quantity: 1,
-          rate: parseFloat(milestone.amount?.toString() || '0'),
-          amount: parseFloat(milestone.amount?.toString() || '0'),
+          rate: parseFloat(milestone.amount?.toString() || '0') || 0,
+          amount: parseFloat(milestone.amount?.toString() || '0') || 0,
           milestone_name: milestone.name
         }));
       } else if (formValues.engagement_type === 'project' || formValues.engagement_type === 'retainership') {
         invoiceItems = [{
           description: formValues.items[0].description || (formValues.engagement_type === 'project' ? 'Project Fee' : 'Monthly Retainer Fee'),
           quantity: 1,
-          rate: parseFloat(formValues.items[0].rate?.toString() || '0'),
-          amount: parseFloat(formValues.items[0].amount?.toString() || subtotal)
+          rate: parseFloat(formValues.items[0].rate?.toString() || '0') || 0,
+          amount: parseFloat(formValues.items[0].amount?.toString() || subtotal) || 0
         }];
       } else {
         invoiceItems = formValues.items.map(item => ({
@@ -409,57 +406,67 @@ const PastInvoiceForm = () => {
   };
   
   // Render different item sections based on engagement type
-  const renderEngagementTypeForm = () => {
-    switch (watchEngagementType) {
-      case 'milestone':
-        return (
-          <MilestoneItems
-            register={register}
-            control={control}
-            milestoneFields={milestoneFields}
-            watchCurrency={watchCurrency}
-            milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
-            addMilestone={addMilestone}
-            removeMilestone={removeMilestone}
-            updateMilestoneAmount={updateMilestoneAmount}
-          />
-        );
-      case 'retainership':
-        return (
-          <RetainershipItem
-            register={register}
-            control={control}
-            watchCurrency={watchCurrency}
-            watchItems={watchItems}
-            updateRetainershipAmount={updateRetainershipAmount}
-          />
-        );
-      case 'project':
-        return (
-          <ProjectItem
-            register={register}
-            control={control}
-            watchCurrency={watchCurrency}
-            watchItems={watchItems}
-            updateProjectAmount={updateProjectAmount}
-          />
-        );
-      case 'service':
-      default:
-        return (
-          <ServiceItems
-            register={register}
-            control={control}
-            errors={errors}
-            fields={fields}
-            watchItems={watchItems}
-            selectedCurrency={selectedCurrency}
-            itemsFieldArray={{ fields, append, remove }}
-            addItem={addItem}
-            removeItem={removeItem}
-            updateItemAmount={updateItemAmount}
-          />
-        );
+  const renderItemsSection = () => {
+    if (watchEngagementType === 'milestone') {
+      return (
+        <MilestoneItems
+          register={register}
+          control={control}
+          milestoneFields={milestoneFields}
+          watchCurrency={watchCurrency}
+          milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
+          addMilestone={addMilestone}
+          removeMilestone={removeMilestone}
+          updateMilestoneAmount={updateMilestoneAmount}
+        />
+      );
+    } else if (watchEngagementType === 'retainership') {
+      return (
+        <RetainershipItem
+          register={register}
+          control={control}
+          watchCurrency={watchCurrency}
+          watchItems={watchItems}
+          updateRetainershipAmount={updateRetainershipAmount}
+        />
+      );
+    } else if (watchEngagementType === 'project') {
+      return (
+        <ProjectItem
+          register={register}
+          control={control}
+          watchCurrency={watchCurrency}
+          watchItems={watchItems}
+          updateProjectAmount={updateProjectAmount}
+        />
+      );
+    } else {
+      // Default service-based or others: line items with quantity and rate
+      return (
+        <ServiceItems
+          register={register}
+          control={control}
+          errors={errors}
+          fields={fields}
+          watchItems={watchItems}
+          selectedCurrency={selectedCurrency}
+          itemsFieldArray={{ fields, append, remove }}
+          addItem={addItem}
+          removeItem={removeItem}
+          updateItemAmount={updateItemAmount}
+        />
+      );
+    }
+  };
+  
+  const handleSaveAndSend = async () => {
+    // First save the invoice
+    const savedInvoiceId = await handleSave();
+    
+    if (savedInvoiceId) {
+      // Show success message (in a real app, this would trigger sending the invoice)
+      toast.success('Invoice saved and marked as sent');
+      navigate(`/invoices/${savedInvoiceId}`);
     }
   };
   
@@ -480,12 +487,8 @@ const PastInvoiceForm = () => {
         </div>
       </div>
       
-      {/* Alert banner for past invoice */}
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
         <div className="flex">
-          <div className="flex-shrink-0">
-            <CreditCard className="h-5 w-5 text-blue-600" />
-          </div>
           <div className="ml-3">
             <p className="text-sm text-blue-700">
               You're recording a past invoice that has already been paid. This invoice will automatically be marked as paid.
@@ -520,8 +523,8 @@ const PastInvoiceForm = () => {
                 <input
                   type="date"
                   id="payment_date"
-                  className={`block w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm ${
-                    errors.payment_date ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    errors.payment_date ? 'border-red-300' : 'border-gray-300'
                   }`}
                   {...register('payment_date', { required: "Payment date is required for past invoices" })}
                 />
@@ -536,8 +539,8 @@ const PastInvoiceForm = () => {
                 </label>
                 <select
                   id="payment_method"
-                  className={`block w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm ${
-                    errors.payment_method ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    errors.payment_method ? 'border-red-300' : 'border-gray-300'
                   }`}
                   {...register('payment_method', { required: "Payment method is required for past invoices" })}
                 >
@@ -569,7 +572,7 @@ const PastInvoiceForm = () => {
           </div>
 
           {/* Dynamic Item Sections */}
-          {renderEngagementTypeForm()}
+          {renderItemsSection()}
           
           {/* Tax Settings */}
           <TaxSettings 
@@ -585,7 +588,6 @@ const PastInvoiceForm = () => {
             total={total}
             selectedCurrency={selectedCurrency}
             taxPercentage={watchTaxPercentage}
-            reverseCalculation={watchReverseCalculation}
           />
           
           {/* Notes */}
@@ -597,21 +599,28 @@ const PastInvoiceForm = () => {
           <button
             type="button"
             onClick={() => navigate('/invoices')}
-            className="w-full sm:w-auto btn btn-secondary btn-md"
+            className="btn btn-secondary btn-md"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="w-full sm:w-auto btn btn-primary btn-md"
+            className="btn btn-primary btn-md"
           >
-            {loading ? 'Saving...' : 'Save Past Invoice'}
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <span className="h-4 w-4 mr-2 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                Saving...
+              </span>
+            ) : (
+              'Save Past Invoice'
+            )}
           </button>
           <button
             type="button"
             onClick={handleOpenPreview}
-            className="w-full sm:w-auto btn btn-success btn-md"
+            className="btn btn-link btn-md text-blue-600 hover:text-blue-700"
           >
             Preview Invoice
           </button>

@@ -198,6 +198,7 @@ const NewExpense = () => {
                       className={`block w-full pl-10 pr-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                         errors.amount ? 'border-red-300' : 'border-gray-300'
                       }`}
+                      placeholder=""
                       {...register('amount', { 
                         required: 'Amount is required',
                         min: { value: 0.01, message: 'Amount must be greater than 0' },
@@ -261,6 +262,12 @@ const NewExpense = () => {
                   {errors.category_id && (
                     <p className="mt-1 text-sm text-red-600">{errors.category_id.message}</p>
                   )}
+                  <button
+                    type="button"
+                    className="mt-1 text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Manage categories
+                  </button>
                 </div>
                 
                 <div>

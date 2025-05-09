@@ -1,22 +1,24 @@
-import { Save, FileText, Download } from 'lucide-react';
+import { Save, Send, CreditCard, Eye } from 'lucide-react';
 
 interface ActionButtonsProps {
   loading: boolean;
   onCancel: () => void;
-  onPreview: () => void;
-  onDownload?: () => void;
-  showDownload?: boolean;
+  onSaveAndSend?: () => void;
+  onSaveAndRecordPayment?: () => void;
+  showPreviewLink?: boolean;
+  onPreviewClick?: () => void;
 }
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({ 
   loading, 
   onCancel, 
-  onPreview, 
-  onDownload,
-  showDownload = false
+  onSaveAndSend,
+  onSaveAndRecordPayment,
+  showPreviewLink = false,
+  onPreviewClick
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+    <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
       <button
         type="button"
         onClick={onCancel}
@@ -24,39 +26,46 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       >
         Cancel
       </button>
-      <button
-        type="button"
-        onClick={onPreview}
-        disabled={loading}
-        className="w-full sm:w-auto btn btn-success btn-md group"
-      >
-        <FileText className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-        <span className="hidden xs:inline">Preview</span>
-      </button>
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full sm:w-auto btn btn-primary btn-md group"
-      >
-        <Save className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-        {loading ? (
-          <span className="flex items-center">
-            <span className="h-4 w-4 mr-2 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
-            Saving...
-          </span>
-        ) : (
-          'Save'
-        )}
-      </button>
-      {showDownload && onDownload && (
+      
+      {showPreviewLink && onPreviewClick && (
         <button
           type="button"
-          onClick={onDownload}
-          disabled={loading}
-          className="w-full sm:w-auto btn btn-secondary btn-md group"
+          onClick={onPreviewClick}
+          className="w-full sm:w-auto btn btn-secondary btn-md"
         >
-          <Download className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-          <span className="hidden xs:inline">Download PDF</span>
+          <Eye className="h-4 w-4 mr-2" />
+          Preview
+        </button>
+      )}
+      
+      {onSaveAndRecordPayment && (
+        <button
+          type="button"
+          onClick={onSaveAndRecordPayment}
+          disabled={loading}
+          className="w-full sm:w-auto btn btn-success btn-md group"
+        >
+          <CreditCard className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+          Save &amp; Record Payment
+        </button>
+      )}
+      
+      {onSaveAndSend && (
+        <button
+          type="button"
+          onClick={onSaveAndSend}
+          disabled={loading}
+          className="w-full sm:w-auto btn btn-primary btn-md group"
+        >
+          <Send className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+          {loading ? (
+            <span className="flex items-center">
+              <span className="h-4 w-4 mr-2 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+              Saving...
+            </span>
+          ) : (
+            'Save & Send'
+          )}
         </button>
       )}
     </div>

@@ -23,9 +23,13 @@ import InvoiceTotals from '../../components/invoices/InvoiceTotals';
 import InvoiceNotes from '../../components/invoices/InvoiceNotes';
 import ActionButtons from '../../components/invoices/ActionButtons';
 
-// Use lazy loading for the modal component which is not needed immediately
+// Use lazy loading for the modal components
 const InvoicePreviewModal = lazy(() => 
   import('../../components/invoices/InvoicePreviewModal')
+);
+
+const RecordPaymentModal = lazy(() => 
+  import('../../components/invoices/RecordPaymentModal')
 );
 
 const NewInvoice = () => {
@@ -39,7 +43,7 @@ const NewInvoice = () => {
   
   const { user } = useAuthStore();
   const { clients, fetchClients, fetchEngagementModel, getClient } = useClientStore();
-  const { createInvoice, updateInvoice, generateInvoiceNumber, loading } = useInvoiceStore();
+  const { createInvoice, updateInvoice, generateInvoiceNumber, loading, recordPayment } = useInvoiceStore();
   const { profile, bankingInfo, fetchProfile, fetchBankingInfo } = useProfileStore();
   
   const [subtotal, setSubtotal] = useState(0);
@@ -52,7 +56,7 @@ const NewInvoice = () => {
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
   const [isSavingFromPreview, setIsSavingFromPreview] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [shouldMarkAsPaid, setShouldMarkAsPaid] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   const { 
     register, 
@@ -66,13 +70,8 @@ const NewInvoice = () => {
     defaultValues: {
       issue_date: new Date().toISOString().split('T')[0],
       due_date: calculateDueDate(new Date().toISOString(), 15),
-      payment_date: '',
-      payment_method: '',
-      payment_reference: '',
-      status: 'draft',
       currency: 'INR',
       tax_percentage: 0,
-      reverse_calculation: false,
       items: [{ description: '', quantity: 1, rate: 0, amount: 0 }],
       milestones: [{ name: 'Milestone 1', amount: 0 }],
       engagement_type: 'service' // Set a default engagement type
@@ -95,18 +94,7 @@ const NewInvoice = () => {
   const watchEngagementType = watch('engagement_type');
   const watchMilestones = watch('milestones', []);
   const watchTaxPercentage = watch('tax_percentage');
-  const watchReverseCalculation = watch('reverse_calculation');
   const watchNotes = watch('notes');
-  const watchPaymentDate = watch('payment_date');
-  const watchPaymentMethod = watch('payment_method');
-  
-  // Check if payment details are filled to determine if invoice should be marked as paid
-  useEffect(() => {
-    const paymentDate = watchPaymentDate;
-    const paymentMethod = watchPaymentMethod;
-    
-    setShouldMarkAsPaid(!!paymentDate && !!paymentMethod);
-  }, [watchPaymentDate, watchPaymentMethod]);
   
   // Calculate invoice totals based on engagement type
   const calculateTotals = useCallback(() => {
@@ -162,7 +150,7 @@ const NewInvoice = () => {
   }, [setValue, calculateTotals]);
   
   // Update tax settings
-  const updateTaxSettings = useCallback(() => {
+  const updateTaxSettings = useCallback((taxPercentage: number) => {
     // Recalculate totals immediately
     setTimeout(() => calculateTotals(), 0);
   }, [calculateTotals]);
@@ -179,8 +167,7 @@ const NewInvoice = () => {
     watchCurrency, 
     selectedCurrency, 
     watchEngagementType, 
-    watchTaxPercentage, 
-    watchReverseCalculation, 
+    watchTaxPercentage,
     calculateTotals
   ]);
   
@@ -248,11 +235,6 @@ const NewInvoice = () => {
         setValue('currency', existingInvoice.currency);
         setValue('engagement_type', existingInvoice.engagement_type);
         setValue('tax_percentage', existingInvoice.tax_percentage);
-        setValue('reverse_calculation', existingInvoice.reverse_calculation);
-        setValue('payment_date', existingInvoice.payment_date || '');
-        setValue('payment_method', existingInvoice.payment_method || '');
-        setValue('payment_reference', existingInvoice.payment_reference || '');
-        setValue('status', existingInvoice.status || 'draft');
         
         // Set items based on engagement type
         if (existingInvoice.engagement_type === 'milestone' && existingInvoice.milestones) {
@@ -441,10 +423,7 @@ const NewInvoice = () => {
         engagement_type: watchEngagementType,
         items: watchEngagementType !== 'milestone' ? watchItems : undefined,
         milestones: watchEngagementType === 'milestone' ? watchMilestones : undefined,
-        payment_date: watchPaymentDate,
-        payment_method: watchPaymentMethod,
-        payment_reference: getValues('payment_reference'),
-        status: shouldMarkAsPaid ? 'paid' : 'draft'
+        status: 'draft'
       }
     };
     
@@ -466,19 +445,22 @@ const NewInvoice = () => {
     setIsSavingFromPreview(false);
     setPreviewOpen(false);
   };
-
+  
   const handleSendEmail = async () => {
+    if (!selectedClient?.email) {
+      toast.error('Client email address is missing');
+      return;
+    }
+    
     setIsSendingEmail(true);
     try {
-      // Save the invoice first if it's not already saved
-      const savedInvoiceId = await handleSave();
+      // Save the invoice first
+      const savedInvoiceId = await handleSave('sent');
       
-      // For now, we'll just show a toast message since we haven't implemented the actual email sending
-      if (selectedClient?.email) {
-        toast.success(`Invoice would be sent to ${selectedClient.email}`);
+      if (savedInvoiceId) {
+        toast.success(`Invoice sent to ${selectedClient.email}`);
         // In a real implementation, you would call an API endpoint to send the email
-      } else {
-        toast.error('Client email address is missing');
+        navigate(`/invoices/${savedInvoiceId}/view`, { target: "_blank" });
       }
     } catch (error) {
       console.error('Error sending invoice:', error);
@@ -489,7 +471,7 @@ const NewInvoice = () => {
   };
   
   // Main save function
-  const handleSave = async (): Promise<string | undefined> => {
+  const handleSave = async (status?: string): Promise<string | undefined> => {
     if (!user) return;
     
     try {
@@ -499,8 +481,8 @@ const NewInvoice = () => {
       // Prepare invoice data
       const formValues = getValues();
       
-      // Determine invoice status based on payment details
-      const invoiceStatus = shouldMarkAsPaid ? 'paid' : 'draft';
+      // Determine invoice status based on parameter or default to draft
+      const invoiceStatus = status || 'draft';
       
       const invoiceData = {
         user_id: user.id,
@@ -515,11 +497,7 @@ const NewInvoice = () => {
         notes: formValues.notes,
         currency: formValues.currency,
         engagement_type: formValues.engagement_type,
-        tax_percentage: formValues.tax_percentage,
-        reverse_calculation: formValues.reverse_calculation,
-        payment_date: shouldMarkAsPaid ? formValues.payment_date : null,
-        payment_method: shouldMarkAsPaid ? formValues.payment_method : null,
-        payment_reference: shouldMarkAsPaid ? formValues.payment_reference : null
+        tax_percentage: formValues.tax_percentage
       };
       
       // Prepare invoice items based on engagement type
@@ -534,8 +512,8 @@ const NewInvoice = () => {
         invoiceItems = [{
           description: formValues.items[0].description || (formValues.engagement_type === 'project' ? 'Project Fee' : 'Monthly Retainer Fee'),
           quantity: 1,
-          rate: parseFloat(formValues.items[0].rate?.toString() || '0'),
-          amount: parseFloat(formValues.items[0].amount?.toString() || subtotal)
+          rate: parseFloat(formValues.items[0].rate?.toString() || '0') || 0,
+          amount: parseFloat(formValues.items[0].amount?.toString() || '0') || 0
         }];
       } else {
         // For service-based or other types, use all line items
@@ -560,10 +538,6 @@ const NewInvoice = () => {
       }
       
       if (result) {
-        // Navigate to invoice details page after successful save
-        setTimeout(() => {
-          navigate(`/invoices/${result.id}`);
-        }, 500);
         return result.id;
       }
     } catch (error) {
@@ -573,6 +547,43 @@ const NewInvoice = () => {
   };
   
   const onSubmit = handleSave;
+  
+  const handleSaveAndSend = async () => {
+    await handleSendEmail();
+  };
+  
+  const handleSaveAndRecordPayment = async () => {
+    // Save the invoice first
+    const savedInvoiceId = await handleSave();
+    
+    if (savedInvoiceId) {
+      // Get the invoice details to pass to the payment modal
+      const invoice = {
+        id: savedInvoiceId,
+        total: total,
+        currency: watchCurrency,
+        status: 'draft'
+      };
+      
+      // Open the payment modal
+      setShowPaymentModal(true);
+    }
+  };
+  
+  const handleRecordPayment = async (paymentDetails: any) => {
+    const savedInvoiceId = await handleSave();
+    
+    if (savedInvoiceId) {
+      try {
+        await recordPayment(savedInvoiceId, paymentDetails);
+        toast.success('Payment recorded successfully');
+        navigate(`/invoices/${savedInvoiceId}/view`, { target: "_blank" });
+      } catch (error) {
+        console.error('Error recording payment:', error);
+        toast.error('Failed to record payment');
+      }
+    }
+  };
   
   // Add item function for service items
   const addItem = () => {
@@ -615,57 +626,56 @@ const NewInvoice = () => {
   };
   
   // Render different item sections based on engagement type
-  const renderEngagementTypeForm = () => {
-    switch (watchEngagementType) {
-      case 'milestone':
-        return (
-          <MilestoneItems
-            register={register}
-            control={control}
-            milestoneFields={milestoneFields}
-            watchCurrency={watchCurrency}
-            milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
-            addMilestone={addMilestone}
-            removeMilestone={removeMilestone}
-            updateMilestoneAmount={updateMilestoneAmount}
-          />
-        );
-      case 'retainership':
-        return (
-          <RetainershipItem
-            register={register}
-            control={control}
-            watchCurrency={watchCurrency}
-            watchItems={watchItems}
-            updateRetainershipAmount={updateRetainershipAmount}
-          />
-        );
-      case 'project':
-        return (
-          <ProjectItem
-            register={register}
-            control={control}
-            watchCurrency={watchCurrency}
-            watchItems={watchItems}
-            updateProjectAmount={updateProjectAmount}
-          />
-        );
-      case 'service':
-      default:
-        return (
-          <ServiceItems
-            register={register}
-            control={control}
-            errors={errors}
-            fields={fields}
-            watchItems={watchItems}
-            selectedCurrency={selectedCurrency}
-            itemsFieldArray={{ fields, append, remove }}
-            addItem={addItem}
-            removeItem={removeItem}
-            updateItemAmount={updateItemAmount}
-          />
-        );
+  const renderItemsSection = () => {
+    if (watchEngagementType === 'milestone') {
+      return (
+        <MilestoneItems
+          register={register}
+          control={control}
+          milestoneFields={milestoneFields}
+          watchCurrency={watchCurrency}
+          milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
+          addMilestone={addMilestone}
+          removeMilestone={removeMilestone}
+          updateMilestoneAmount={updateMilestoneAmount}
+        />
+      );
+    } else if (watchEngagementType === 'retainership') {
+      return (
+        <RetainershipItem
+          register={register}
+          control={control}
+          watchCurrency={watchCurrency}
+          watchItems={watchItems}
+          updateRetainershipAmount={updateRetainershipAmount}
+        />
+      );
+    } else if (watchEngagementType === 'project') {
+      return (
+        <ProjectItem
+          register={register}
+          control={control}
+          watchCurrency={watchCurrency}
+          watchItems={watchItems}
+          updateProjectAmount={updateProjectAmount}
+        />
+      );
+    } else {
+      // Default service-based or others: line items with quantity and rate
+      return (
+        <ServiceItems
+          register={register}
+          control={control}
+          errors={errors}
+          fields={fields}
+          watchItems={watchItems}
+          selectedCurrency={selectedCurrency}
+          itemsFieldArray={{ fields, append, remove }}
+          addItem={addItem}
+          removeItem={removeItem}
+          updateItemAmount={updateItemAmount}
+        />
+      );
     }
   };
   
@@ -697,67 +707,8 @@ const NewInvoice = () => {
             watchClientId={watchClientId}
           />
           
-          {/* Payment Details for Past Invoices */}
-          <div className="p-4 sm:p-6 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3">Payment Details (Optional)</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Fill these details if you're recording a past invoice that's already been paid.
-              The invoice will be automatically marked as paid.
-            </p>
-            
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-              <div>
-                <label htmlFor="payment_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Date
-                </label>
-                <input
-                  type="date"
-                  id="payment_date"
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  {...register('payment_date')}
-                />
-                {shouldMarkAsPaid && (
-                  <p className="mt-1 text-xs text-green-600">
-                    Invoice will be marked as paid
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Method
-                </label>
-                <select
-                  id="payment_method"
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  {...register('payment_method')}
-                >
-                  <option value="">Select payment method</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="cash">Cash</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="upi">UPI</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div className="sm:col-span-2">
-                <label htmlFor="payment_reference" className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Reference
-                </label>
-                <input
-                  type="text"
-                  id="payment_reference"
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Transaction ID, Cheque number, etc."
-                  {...register('payment_reference')}
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Dynamic Item Sections */}
-          {renderEngagementTypeForm()}
+          {renderItemsSection()}
           
           {/* Tax Settings */}
           <TaxSettings 
@@ -773,7 +724,6 @@ const NewInvoice = () => {
             total={total}
             selectedCurrency={selectedCurrency}
             taxPercentage={watchTaxPercentage}
-            reverseCalculation={watchReverseCalculation}
           />
           
           {/* Notes */}
@@ -784,7 +734,10 @@ const NewInvoice = () => {
         <ActionButtons 
           loading={loading} 
           onCancel={() => navigate('/invoices')}
-          onPreview={handleOpenPreview}
+          onSaveAndSend={handleSaveAndSend}
+          onSaveAndRecordPayment={handleSaveAndRecordPayment}
+          showPreviewLink={true}
+          onPreviewClick={handleOpenPreview}
         />
       </form>
       
@@ -798,9 +751,27 @@ const NewInvoice = () => {
             onClose={handleClosePreview}
             data={previewData}
             onSave={handleSaveFromPreview}
-            onSend={handleSendEmail}
             isSaving={isSavingFromPreview || loading}
             isUpdate={editMode}
+          />
+        </Suspense>
+      )}
+      
+      {/* Payment Recording Modal (lazy loaded) */}
+      {showPaymentModal && (
+        <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>}>
+          <RecordPaymentModal 
+            isOpen={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            onSave={handleRecordPayment}
+            invoice={{
+              id: '',
+              total: total,
+              currency: watchCurrency,
+              status: 'draft'
+            }}
           />
         </Suspense>
       )}

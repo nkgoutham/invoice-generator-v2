@@ -47,32 +47,17 @@ export const calculateDueDate = (issueDate: string, days = 15): string => {
 
 export const calculateTaxAndTotal = (
   subtotal: number,
-  taxPercentage: number = 0,
-  reverseCalculation: boolean = false
+  taxPercentage: number = 0
 ): { subtotal: number; tax: number; total: number } => {
   const numericSubtotal = Number(subtotal) || 0;
   const numericTaxRate = Number(taxPercentage) || 0;
   
-  let calculatedTax = 0;
-  let calculatedTotal = 0;
-  let calculatedSubtotal = numericSubtotal;
-  
-  if (reverseCalculation && numericTaxRate > 0) {
-    const taxFactor = 1 - (numericTaxRate / 100);
-    if (taxFactor > 0) {
-      calculatedTotal = numericSubtotal / taxFactor;
-      calculatedTax = calculatedTotal - numericSubtotal;
-    } else {
-      calculatedTotal = numericSubtotal;
-      calculatedTax = 0;
-    }
-  } else {
-    calculatedTax = numericSubtotal * (numericTaxRate / 100);
-    calculatedTotal = numericSubtotal + calculatedTax;
-  }
+  // Standard forward calculation
+  const calculatedTax = numericSubtotal * (numericTaxRate / 100);
+  const calculatedTotal = numericSubtotal + calculatedTax;
   
   return {
-    subtotal: Math.round(calculatedSubtotal * 100) / 100,
+    subtotal: Math.round(numericSubtotal * 100) / 100,
     tax: Math.round(calculatedTax * 100) / 100,
     total: Math.round(calculatedTotal * 100) / 100
   };
@@ -83,7 +68,6 @@ export const calculateInvoiceTotals = (
   engagementType: string | undefined
 ): { subtotal: number; tax: number; total: number } => {
   const taxPercentage = Number(formData.tax_percentage) || 0;
-  const reverseCalculation = Boolean(formData.reverse_calculation);
   
   let calculatedSubtotal = 0;
   
@@ -108,7 +92,7 @@ export const calculateInvoiceTotals = (
     }, 0);
   }
   
-  return calculateTaxAndTotal(calculatedSubtotal, taxPercentage, reverseCalculation);
+  return calculateTaxAndTotal(calculatedSubtotal, taxPercentage);
 };
 
 export function truncateText(text: string, maxLength: number): string {

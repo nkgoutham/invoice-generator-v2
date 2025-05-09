@@ -79,9 +79,9 @@ const ServiceItems: React.FC<ServiceItemsProps> = ({
                         className={`block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                           errors.items?.[index]?.quantity ? 'border-red-300' : ''
                         }`}
-                        value={field.value}
+                        value={field.value || ''}
                         onChange={(e) => {
-                          const quantity = parseFloat(e.target.value) || 0;
+                          const quantity = e.target.value === '' ? 0 : parseFloat(e.target.value);
                           field.onChange(quantity);
                           
                           const rate = parseFloat(watchItems[index]?.rate?.toString() || '0') || 0;
@@ -109,9 +109,9 @@ const ServiceItems: React.FC<ServiceItemsProps> = ({
                           className={`block w-full pl-8 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                             errors.items?.[index]?.rate ? 'border-red-300' : ''
                           }`}
-                          value={field.value}
+                          value={field.value || ''}
                           onChange={(e) => {
-                            const rate = parseFloat(e.target.value) || 0;
+                            const rate = e.target.value === '' ? 0 : parseFloat(e.target.value);
                             field.onChange(rate);
                             
                             const quantity = parseFloat(watchItems[index]?.quantity?.toString() || '0') || 0;
@@ -206,9 +206,9 @@ const ServiceItems: React.FC<ServiceItemsProps> = ({
                           className={`block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                             errors.items?.[index]?.quantity ? 'border-red-300' : ''
                           }`}
-                          value={field.value}
+                          value={field.value || ''}
                           onChange={(e) => {
-                            const quantity = parseFloat(e.target.value) || 0;
+                            const quantity = e.target.value === '' ? 0 : parseFloat(e.target.value);
                             field.onChange(quantity);
                             
                             const rate = parseFloat(watchItems[index]?.rate?.toString() || '0') || 0;
@@ -235,9 +235,9 @@ const ServiceItems: React.FC<ServiceItemsProps> = ({
                             className={`block w-full pl-8 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                               errors.items?.[index]?.rate ? 'border-red-300' : ''
                             }`}
-                            value={field.value}
+                            value={field.value || ''}
                             onChange={(e) => {
-                              const rate = parseFloat(e.target.value) || 0;
+                              const rate = e.target.value === '' ? 0 : parseFloat(e.target.value);
                               field.onChange(rate);
                               
                               const quantity = parseFloat(watchItems[index]?.quantity?.toString() || '0') || 0;

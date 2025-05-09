@@ -7,7 +7,6 @@ export interface InvoiceFormData {
   currency: string;
   engagement_type: string;
   tax_percentage: number;
-  reverse_calculation: boolean;
   items: Array<{
     description: string;
     quantity: number;

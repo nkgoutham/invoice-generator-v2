@@ -73,17 +73,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
 
-      // Important: Use signUp without email confirmation
-      // This allows direct sign-up without verification steps
+      // Step 1: Create the user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          // Don't require email confirmation
-          emailRedirectTo: `${window.location.origin}/login`,
-          // Don't store additional user metadata that might confuse the trigger
-          data: {}
-        }
+        password
       });
       
       if (error) {
@@ -107,8 +100,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         return false;
       }
       
-      // Don't set the user in the store on signup - make them sign in
-      // This is to keep the flow clean, especially if email confirmation is enabled later
+      // Note: We don't need to manually create a profile here because
+      // a database trigger will automatically create the profile, banking info,
+      // and default expense categories when a new user is created
+      
       set({ 
         error: null,
         loading: false

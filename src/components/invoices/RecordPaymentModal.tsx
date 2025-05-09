@@ -3,13 +3,18 @@ import { Calendar } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { PAYMENT_METHODS, PaymentDetails } from '../../types/invoice';
 import { formatCurrency } from '../../utils/helpers';
-import { Invoice } from '../../lib/supabase';
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (paymentDetails: PaymentDetails) => Promise<void>;
-  invoice: Invoice;
+  invoice: {
+    id?: string;
+    total: number;
+    currency: string;
+    status?: string;
+    partially_paid_amount?: number;
+  };
 }
 
 const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
@@ -65,7 +70,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   };
   
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value) || 0;
+    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
     setPaymentDetails(prev => ({
       ...prev,
       amount: value
@@ -188,10 +193,10 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                   min="0.01"
                   step="0.01"
                   max={invoice.total.toString()}
-                  value={paymentDetails.amount}
+                  value={paymentDetails.amount || ''}
                   onChange={handleAmountChange}
                   className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-                  placeholder="0.00"
+                  placeholder=""
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
                   <span className="text-gray-500 pr-3 text-xs sm:text-sm">

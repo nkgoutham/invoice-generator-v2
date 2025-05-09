@@ -218,6 +218,7 @@ const EditExpense = () => {
                       className={`block w-full pl-10 pr-3 py-2 border rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                         errors.amount ? 'border-red-300' : 'border-gray-300'
                       }`}
+                      placeholder=""
                       {...register('amount', { 
                         required: 'Amount is required',
                         min: { value: 0.01, message: 'Amount must be greater than 0' },

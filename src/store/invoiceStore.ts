@@ -21,7 +21,8 @@ interface InvoiceState {
   ) => Promise<Invoice | null>;
   updateInvoiceStatus: (id: string, status: 'draft' | 'sent' | 'paid' | 'overdue' | 'partially_paid') => Promise<void>;
   deleteInvoice: (id: string) => Promise<void>;
-  recordPayment: (id: string, paymentDetails: PaymentDetails) => Promise<void>;
+  recordPayment: (id: string, paymentDetails: PaymentDetails) => Promise<Invoice | null>;
+  updateInvoice: (id: string, invoiceData: Partial<Invoice>, invoiceItems?: any[]) => Promise<Invoice | null>;
 }
 
 export const useInvoiceStore = create<InvoiceState>((set, get) => ({
@@ -250,6 +251,94 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     }
   },
 
+  updateInvoice: async (id, invoiceData, invoiceItems) => {
+    try {
+      set({ loading: true, error: null });
+      
+      // First, update the invoice
+      const { data: updatedInvoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .update(invoiceData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (invoiceError) throw invoiceError;
+      
+      // If invoice items are provided, update them too
+      if (invoiceItems && updatedInvoice) {
+        // First, delete existing invoice items
+        const { error: deleteError } = await supabase
+          .from('invoice_items')
+          .delete()
+          .eq('invoice_id', id);
+        
+        if (deleteError) throw deleteError;
+        
+        // Format items based on engagement type
+        let formattedItems;
+        
+        if (invoiceData.engagement_type === 'milestone') {
+          // For milestone-based invoices
+          formattedItems = (invoiceItems as any[]).map(milestone => ({
+            invoice_id: id,
+            milestone_name: typeof milestone.name === 'string' ? milestone.name : milestone.milestone_name || 'Milestone',
+            description: null, // Not required for milestones
+            quantity: 1,
+            rate: typeof milestone.amount === 'number' ? milestone.amount : parseFloat(milestone.amount) || 0,
+            amount: typeof milestone.amount === 'number' ? milestone.amount : parseFloat(milestone.amount) || 0
+          }));
+        } else if (invoiceData.engagement_type === 'retainership' || invoiceData.engagement_type === 'project') {
+          // For retainership or project-based invoices
+          const item = invoiceItems[0] as any;
+          formattedItems = [{
+            invoice_id: id,
+            description: item.description || (invoiceData.engagement_type === 'project' ? 'Project Fee' : 'Monthly Retainer Fee'),
+            quantity: 1,
+            rate: item.rate || 0,
+            amount: item.amount || 0,
+            retainer_period: invoiceData.engagement_type === 'retainership' ? (invoiceData as any).retainer_period || null : null,
+            project_description: invoiceData.engagement_type === 'project' ? (invoiceData as any).project_description || null : null
+          }];
+        } else {
+          // For service/hourly-based invoices or default case
+          formattedItems = invoiceItems.map((item: any) => ({
+            invoice_id: id,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.rate,
+            amount: item.amount
+          }));
+        }
+        
+        // Insert the new invoice items
+        const { error: insertError } = await supabase
+          .from('invoice_items')
+          .insert(formattedItems);
+        
+        if (insertError) throw insertError;
+      }
+      
+      // Update the invoices list
+      if (updatedInvoice) {
+        const updatedInvoices = get().invoices.map(invoice => 
+          invoice.id === id ? updatedInvoice : invoice
+        );
+        set({ invoices: updatedInvoices, selectedInvoice: updatedInvoice });
+        return updatedInvoice;
+      }
+      
+      return null;
+    } catch (error: any) {
+      console.error('Error updating invoice:', error);
+      set({ error: error.message });
+      toast.error('Failed to update invoice: ' + error.message);
+      return null;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   updateInvoiceStatus: async (id, status) => {
     try {
       set({ loading: true, error: null });
@@ -328,45 +417,65 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const { selectedInvoice } = get();
-      if (!selectedInvoice) throw new Error('Invoice not found');
-      
-      const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
-      
-      // Determine if this is a full or partial payment
-      let updateData: any = {
-        payment_date,
-        payment_method,
-        payment_reference
-      };
-      
-      if (is_partially_paid) {
-        updateData.status = 'partially_paid';
-        updateData.is_partially_paid = true;
-        updateData.partially_paid_amount = amount;
-      } else {
-        updateData.status = 'paid';
-        updateData.is_partially_paid = false;
+      // Check if we have a valid ID
+      if (!id) {
+        throw new Error("Invoice not found");
       }
       
-      const { error } = await supabase
+      // First, check if the invoice is already paid to prevent duplicate payments
+      const { data: existingInvoice, error: fetchError } = await supabase
+        .from('invoices')
+        .select('id, status')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // If the invoice is already fully paid, prevent recording another payment
+      if (existingInvoice.status === 'paid') {
+        throw new Error('This invoice has already been paid');
+      }
+      
+      // Determine if this is a full or partial payment
+      const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
+      
+      // Prepare the update data
+      const updateData = {
+        payment_date,
+        payment_method,
+        payment_reference,
+        status: is_partially_paid ? 'partially_paid' : 'paid',
+        is_partially_paid: is_partially_paid || false,
+        partially_paid_amount: is_partially_paid ? amount : undefined
+      };
+      
+      // Update the invoice with payment details
+      const { data: updatedInvoice, error } = await supabase
         .from('invoices')
         .update(updateData)
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
       
       if (error) throw error;
       
-      // Update the local state
-      const updatedInvoice = { ...get().selectedInvoice, ...updateData } as Invoice;
-      set({ selectedInvoice: updatedInvoice });
+      // Update the local state if the invoice exists in our store
+      const selectedInvoice = get().selectedInvoice;
+      if (selectedInvoice && selectedInvoice.id === id) {
+        const updatedSelectedInvoice = { ...selectedInvoice, ...updateData };
+        set({ selectedInvoice: updatedSelectedInvoice });
+      }
       
-      // Update the invoices list too
-      const updatedInvoices = get().invoices.map(invoice => 
-        invoice.id === id ? { ...invoice, ...updateData } : invoice
-      );
-      set({ invoices: updatedInvoices });
+      // Update the invoices list if the invoice exists there
+      const invoices = get().invoices;
+      const invoiceIndex = invoices.findIndex(invoice => invoice.id === id);
+      if (invoiceIndex >= 0) {
+        const updatedInvoices = [...invoices];
+        updatedInvoices[invoiceIndex] = { ...updatedInvoices[invoiceIndex], ...updateData };
+        set({ invoices: updatedInvoices });
+      }
       
-      return;
+      return updatedInvoice;
     } catch (error: any) {
       console.error('Error recording payment:', error);
       set({ error: error.message });

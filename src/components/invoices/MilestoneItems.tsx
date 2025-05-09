@@ -73,9 +73,9 @@ const MilestoneItems: React.FC<MilestoneItemsProps> = ({
                       className="block w-full border-gray-300 rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       step="0.01"
                       min="0"
-                      value={field.value}
+                      value={field.value || ''}
                       onChange={(e) => {
-                        const value = parseFloat(e.target.value) || 0;
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                         field.onChange(value);
                         updateMilestoneAmount(index, value);
                       }}

@@ -50,7 +50,6 @@ const NewRecurringInvoice = () => {
       due_date: '',
       currency: 'INR',
       tax_percentage: 0,
-      reverse_calculation: false,
       items: [{ description: '', quantity: 1, rate: 0, amount: 0 }],
       milestones: [{ name: 'Milestone 1', amount: 0 }]
     }
@@ -72,7 +71,6 @@ const NewRecurringInvoice = () => {
   const watchEngagementType = watch('engagement_type');
   const watchMilestones = watch('milestones', []);
   const watchTaxPercentage = watch('tax_percentage');
-  const watchReverseCalculation = watch('reverse_calculation');
   
   // Calculate invoice totals based on all form fields
   const calculateTotals = useCallback(() => {
@@ -101,30 +99,14 @@ const NewRecurringInvoice = () => {
     
     // Calculate tax and total
     const taxRate = parseFloat(watchTaxPercentage?.toString() || '0') || 0;
-    let calculatedTax = 0;
-    let calculatedTotal = 0;
-    
-    if (watchReverseCalculation) {
-      // Reverse calculation (to get the desired net amount)
-      const taxFactor = 1 - (taxRate / 100);
-      if (taxFactor > 0 && taxRate > 0) {
-        calculatedTotal = calculatedSubtotal / taxFactor;
-        calculatedTax = calculatedTotal - calculatedSubtotal;
-      } else {
-        calculatedTotal = calculatedSubtotal;
-        calculatedTax = 0;
-      }
-    } else {
-      // Forward calculation
-      calculatedTax = calculatedSubtotal * (taxRate / 100);
-      calculatedTotal = calculatedSubtotal + calculatedTax;
-    }
+    const calculatedTax = calculatedSubtotal * (taxRate / 100);
+    const calculatedTotal = calculatedSubtotal + calculatedTax;
     
     // Round to 2 decimal places for display consistency
     setSubtotal(Math.round(calculatedSubtotal * 100) / 100);
     setTax(Math.round(calculatedTax * 100) / 100);
     setTotal(Math.round(calculatedTotal * 100) / 100);
-  }, [watchItems, watchEngagementType, watchMilestones, watchTaxPercentage, watchReverseCalculation]);
+  }, [watchItems, watchEngagementType, watchMilestones, watchTaxPercentage]);
   
   // Update item amount when quantity or rate changes
   const updateItemAmount = useCallback((index: number, quantity: number, rate: number) => {
@@ -160,7 +142,7 @@ const NewRecurringInvoice = () => {
   }, [setValue, calculateTotals]);
   
   // Update tax settings
-  const updateTaxSettings = useCallback(() => {
+  const updateTaxSettings = useCallback((taxPercentage: number) => {
     // Recalculate totals immediately
     setTimeout(() => calculateTotals(), 0);
   }, [calculateTotals]);
@@ -173,7 +155,7 @@ const NewRecurringInvoice = () => {
     if (watchCurrency !== selectedCurrency) {
       setSelectedCurrency(watchCurrency);
     }
-  }, [watchCurrency, selectedCurrency, watchEngagementType, watchTaxPercentage, watchReverseCalculation, calculateTotals]);
+  }, [watchCurrency, selectedCurrency, watchEngagementType, watchTaxPercentage, calculateTotals]);
   
   // Fetch clients on load
   useEffect(() => {
@@ -371,55 +353,57 @@ const NewRecurringInvoice = () => {
   
   // Render different item sections based on engagement type
   const renderItemsSection = () => {
-    if (watchEngagementType === 'milestone') {
-      return (
-        <MilestoneItems
-          register={register}
-          control={control}
-          milestoneFields={milestoneFields}
-          watchCurrency={watchCurrency}
-          milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
-          addMilestone={addMilestone}
-          removeMilestone={removeMilestone}
-          updateMilestoneAmount={updateMilestoneAmount}
-        />
-      );
-    } else if (watchEngagementType === 'retainership') {
-      return (
-        <RetainershipItem
-          register={register}
-          control={control}
-          watchCurrency={watchCurrency}
-          watchItems={watchItems}
-          updateRetainershipAmount={updateRetainershipAmount}
-        />
-      );
-    } else if (watchEngagementType === 'project') {
-      return (
-        <ProjectItem
-          register={register}
-          control={control}
-          watchCurrency={watchCurrency}
-          watchItems={watchItems}
-          updateProjectAmount={updateProjectAmount}
-        />
-      );
-    } else {
-      // Default service-based or others: line items with quantity and rate
-      return (
-        <ServiceItems
-          register={register}
-          control={control}
-          errors={errors}
-          fields={fields}
-          watchItems={watchItems}
-          selectedCurrency={selectedCurrency}
-          itemsFieldArray={{ fields, append, remove }}
-          addItem={addItem}
-          removeItem={removeItem}
-          updateItemAmount={updateItemAmount}
-        />
-      );
+    switch (watchEngagementType) {
+      case 'milestone':
+        return (
+          <MilestoneItems
+            register={register}
+            control={control}
+            milestoneFields={milestoneFields}
+            watchCurrency={watchCurrency}
+            milestonesFieldArray={{ fields: milestoneFields, append: appendMilestone, remove: removeMilestoneField }}
+            addMilestone={addMilestone}
+            removeMilestone={removeMilestone}
+            updateMilestoneAmount={updateMilestoneAmount}
+          />
+        );
+      case 'retainership':
+        return (
+          <RetainershipItem
+            register={register}
+            control={control}
+            watchCurrency={watchCurrency}
+            watchItems={watchItems}
+            updateRetainershipAmount={updateRetainershipAmount}
+          />
+        );
+      case 'project':
+        return (
+          <ProjectItem
+            register={register}
+            control={control}
+            watchCurrency={watchCurrency}
+            watchItems={watchItems}
+            updateProjectAmount={updateProjectAmount}
+          />
+        );
+      case 'service':
+      default:
+        // Default service-based or others: line items with quantity and rate
+        return (
+          <ServiceItems
+            register={register}
+            control={control}
+            errors={errors}
+            fields={fields}
+            watchItems={watchItems}
+            selectedCurrency={selectedCurrency}
+            itemsFieldArray={{ fields, append, remove }}
+            addItem={addItem}
+            removeItem={removeItem}
+            updateItemAmount={updateItemAmount}
+          />
+        );
     }
   };
   
@@ -629,7 +613,6 @@ const NewRecurringInvoice = () => {
             total={total}
             selectedCurrency={selectedCurrency}
             taxPercentage={watchTaxPercentage}
-            reverseCalculation={watchReverseCalculation}
           />
           
           {/* Notes */}

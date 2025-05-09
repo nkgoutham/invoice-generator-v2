@@ -6,7 +6,6 @@ interface InvoiceTotalsProps {
   total: number;
   selectedCurrency: string;
   taxPercentage: number;
-  reverseCalculation: boolean;
 }
 
 const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
@@ -14,8 +13,7 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
   tax,
   total,
   selectedCurrency,
-  taxPercentage,
-  reverseCalculation
+  taxPercentage
 }) => {
   return (
     <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
@@ -35,12 +33,6 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
             <span className="text-gray-900">Total:</span>
             <span className="text-blue-600">{formatCurrency(total, selectedCurrency)}</span>
           </div>
-          {reverseCalculation && (
-            <p className="text-xs text-gray-500 italic mt-2">
-              * With reverse calculation, your earnings will be {formatCurrency(subtotal, selectedCurrency)} 
-              after taxes. Client pays {formatCurrency(total, selectedCurrency)}.
-            </p>
-          )}
         </div>
       </div>
     </div>

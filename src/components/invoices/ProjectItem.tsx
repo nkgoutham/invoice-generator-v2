@@ -67,9 +67,9 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
                   className="block w-full border-gray-300 rounded-r-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   min="0"
                   step="0.01"
-                  value={field.value}
+                  value={field.value || ''}
                   onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
+                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                     field.onChange(value);
                     // Always update project amount on rate change
                     updateProjectAmount(value);
@@ -77,7 +77,7 @@ const ProjectItem: React.FC<ProjectItemProps> = ({
                   onBlur={(e) => {
                     // Also update on blur to catch any missed changes
                     field.onBlur();
-                    const value = parseFloat(e.target.value) || 0;
+                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
                     updateProjectAmount(value);
                   }}
                 />

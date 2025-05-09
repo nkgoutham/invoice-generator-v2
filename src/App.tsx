@@ -11,11 +11,6 @@ import Layout from './components/layout/Layout';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
-const ExpenseReports = lazy(() => import('./pages/expenses/ExpenseReports'));
-const ExpensesList = lazy(() => import('./pages/expenses/ExpensesList'));
-const NewExpense = lazy(() => import('./pages/expenses/NewExpense'));
-const ExpenseDetails = lazy(() => import('./pages/expenses/ExpenseDetails'));
-const EditExpense = lazy(() => import('./pages/expenses/EditExpense'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Profile = lazy(() => import('./pages/profile/Profile'));
 const BankingInfo = lazy(() => import('./pages/profile/BankingInfo'));
@@ -25,11 +20,14 @@ const NewClient = lazy(() => import('./pages/clients/NewClient'));
 const EditClient = lazy(() => import('./pages/clients/EditClient'));
 const Invoices = lazy(() => import('./pages/invoices/Invoices'));
 const NewInvoice = lazy(() => import('./pages/invoices/NewInvoice'));
-const PastInvoiceForm = lazy(() => import('./pages/invoices/PastInvoiceForm'));
 const InvoiceDetails = lazy(() => import('./pages/invoices/InvoiceDetails'));
-const InvoicePDF = lazy(() => import('./pages/invoices/InvoicePDF'));
-const InvoicePreview = lazy(() => import('./pages/invoices/InvoicePreview'));
+const InvoiceView = lazy(() => import('./pages/invoices/InvoiceView'));
 const Earnings = lazy(() => import('./pages/earnings/Earnings'));
+const ExpenseReports = lazy(() => import('./pages/expenses/ExpenseReports'));
+const ExpensesList = lazy(() => import('./pages/expenses/ExpensesList'));
+const NewExpense = lazy(() => import('./pages/expenses/NewExpense'));
+const ExpenseDetails = lazy(() => import('./pages/expenses/ExpenseDetails'));
+const EditExpense = lazy(() => import('./pages/expenses/EditExpense'));
 const RecurringInvoices = lazy(() => import('./pages/recurring/RecurringInvoices'));
 const NewRecurringInvoice = lazy(() => import('./pages/recurring/NewRecurringInvoice'));
 const RecurringInvoiceDetails = lazy(() => import('./pages/recurring/RecurringInvoiceDetails'));
@@ -100,6 +98,15 @@ function App() {
           <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
+          {/* Streamlined Invoice View */}
+          <Route path="/invoices/:id/view" element={
+            <ProtectedRoute>
+              <Suspense fallback={<Loading />}>
+                <InvoiceView />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          
           {/* Protected Routes */}
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" />} />
@@ -151,26 +158,12 @@ function App() {
                 <NewInvoice />
               </Suspense>
             } />
-            <Route path="past-invoice" element={
-              <Suspense fallback={<Loading />}>
-                <PastInvoiceForm />
-              </Suspense>
-            } />
             <Route path="invoices/:id" element={
               <Suspense fallback={<Loading />}>
                 <InvoiceDetails />
               </Suspense>
             } />
-            <Route path="invoices/:id/pdf" element={
-              <Suspense fallback={<Loading />}>
-                <InvoicePDF />
-              </Suspense>
-            } />
-            <Route path="invoices/:id/preview" element={
-              <Suspense fallback={<Loading />}>
-                <InvoicePreview />
-              </Suspense>
-            } />
+            
             <Route path="earnings" element={
               <Suspense fallback={<Loading />}>
                 <Earnings />

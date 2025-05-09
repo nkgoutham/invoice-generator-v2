@@ -1,17 +1,23 @@
+import { useRef } from 'react';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { InvoicePreviewData } from '../../types/invoice';
 import { transformInvoiceData } from '../../utils/invoiceDataTransform';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import toast from 'react-hot-toast';
 
 interface InvoicePreviewContentProps {
   data: InvoicePreviewData;
-  onPrint?: () => void;
+  allowDownload?: boolean;
 }
 
 const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
-  data: rawData
+  data: rawData,
+  allowDownload = true
 }) => {
   // Transform data based on engagement type to ensure consistent display
   const data = transformInvoiceData(rawData);
+  const invoiceRef = useRef<HTMLDivElement>(null);
   
   const currencySymbol = data.invoice.currency === 'USD' ? '$' : '₹';
   const primaryColor = data.issuer.primary_color || '#3B82F6';
@@ -49,8 +55,55 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
     return methods[method] || 'Other';
   };
 
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+    
+    try {
+      // Create a clone of the invoice element to apply PDF-specific styling without affecting the visible element
+      const invoiceClone = invoiceRef.current.cloneNode(true) as HTMLElement;
+      invoiceClone.classList.add('pdf-mode');
+      
+      // Temporarily append to the document but hide it
+      invoiceClone.style.position = 'absolute';
+      invoiceClone.style.left = '-9999px';
+      invoiceClone.style.width = '1024px'; // Force desktop width
+      document.body.appendChild(invoiceClone);
+      
+      const canvas = await html2canvas(invoiceClone, {
+        scale: 1.5, // Higher quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        windowWidth: 1200, // Force desktop-like rendering
+        width: 1024 // Fixed width to ensure desktop layout
+      });
+      
+      // Remove the clone after canvas generation
+      document.body.removeChild(invoiceClone);
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with compression
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true // Enable compression
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Invoice-${data.invoice.invoice_number}.pdf`);
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   return (
-    <div className="bg-white min-h-full relative overflow-hidden pdf-ready">
+    <div className="bg-white min-h-full relative overflow-hidden pdf-ready" ref={invoiceRef}>
       {/* Background abstract shapes for a modern look */}
       <div 
         className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10 hidden sm:block print:block pdf-force-show"
@@ -60,6 +113,20 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
         className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-10 hidden sm:block print:block pdf-force-show"
         style={{ backgroundColor: secondaryColor }}
       ></div>
+      
+      {allowDownload && (
+        <div className="absolute top-4 right-4 z-10 print:hidden">
+          <button
+            onClick={handleDownloadPDF}
+            className="bg-white rounded-md shadow-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download PDF
+          </button>
+        </div>
+      )}
       
       <div className="p-6 sm:p-8 md:p-10 max-w-5xl mx-auto relative z-10">
         {/* Header Section with modern design */}

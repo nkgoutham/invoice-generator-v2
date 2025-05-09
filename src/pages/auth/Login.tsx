@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { FileText, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
@@ -101,8 +101,7 @@ const Login = () => {
                 <div className="mt-3 pt-3 border-t border-red-200">
                   <p className="text-sm font-medium">Hmm, we don't recognize those credentials! 🤔</p>
                   <p className="mt-1 text-sm">
-                    We're working on mind-reading technology, but it's not quite there yet. 
-                    Please <Link to="/register" className="font-semibold underline">create an account first</Link> if you haven't already.
+                    Please check your email and password, or <Link to="/register" className="font-semibold underline">create an account</Link> if you haven't already.
                   </p>
                 </div>
               )}
