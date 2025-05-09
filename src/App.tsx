@@ -10,12 +10,6 @@ import Layout from './components/layout/Layout';
 // Lazy loaded pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/auth/Login'));
-const Register = lazy(() => import('./pages/auth/Register'));
-const ExpenseReports = lazy(() => import('./pages/expenses/ExpenseReports'));
-const ExpensesList = lazy(() => import('./pages/expenses/ExpensesList'));
-const NewExpense = lazy(() => import('./pages/expenses/NewExpense'));
-const ExpenseDetails = lazy(() => import('./pages/expenses/ExpenseDetails'));
-const EditExpense = lazy(() => import('./pages/expenses/EditExpense'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Profile = lazy(() => import('./pages/profile/Profile'));
 const BankingInfo = lazy(() => import('./pages/profile/BankingInfo'));
@@ -30,6 +24,11 @@ const InvoiceDetails = lazy(() => import('./pages/invoices/InvoiceDetails'));
 const InvoicePDF = lazy(() => import('./pages/invoices/InvoicePDF'));
 const InvoicePreview = lazy(() => import('./pages/invoices/InvoicePreview'));
 const Earnings = lazy(() => import('./pages/earnings/Earnings'));
+const ExpenseReports = lazy(() => import('./pages/expenses/ExpenseReports'));
+const ExpensesList = lazy(() => import('./pages/expenses/ExpensesList'));
+const NewExpense = lazy(() => import('./pages/expenses/NewExpense'));
+const ExpenseDetails = lazy(() => import('./pages/expenses/ExpenseDetails'));
+const EditExpense = lazy(() => import('./pages/expenses/EditExpense'));
 const RecurringInvoices = lazy(() => import('./pages/recurring/RecurringInvoices'));
 const NewRecurringInvoice = lazy(() => import('./pages/recurring/NewRecurringInvoice'));
 const RecurringInvoiceDetails = lazy(() => import('./pages/recurring/RecurringInvoiceDetails'));
@@ -97,7 +96,6 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Protected Routes */}
