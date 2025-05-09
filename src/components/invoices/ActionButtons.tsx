@@ -46,7 +46,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
           className="w-full sm:w-auto btn btn-success btn-md group"
         >
           <CreditCard className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-          Save &amp; Record Payment
+          Save & Record Payment
         </button>
       )}
       
