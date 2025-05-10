@@ -5,15 +5,24 @@ import { generateInvoiceNumber } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import { PaymentDetails } from '../types/invoice';
 
+// Define the invoice history type
+export interface InvoiceHistory {
+  timestamp: string;
+  action: 'created' | 'updated' | 'status_changed' | 'payment_recorded';
+  details?: any;
+}
+
 interface InvoiceState {
   invoices: Invoice[];
   selectedInvoice: Invoice | null;
   invoiceItems: InvoiceItem[];
+  invoiceHistory: InvoiceHistory[];
   loading: boolean;
   error: string | null;
   fetchInvoices: (userId: string) => Promise<void>;
   fetchInvoice: (id: string) => Promise<void>;
   fetchInvoiceItems: (invoiceId: string) => Promise<void>;
+  fetchInvoiceHistory: (invoiceId: string) => Promise<void>;
   generateInvoiceNumber: (userId: string) => Promise<string>;
   createInvoice: (
     invoiceData: Partial<Invoice>,
@@ -29,6 +38,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   invoices: [],
   selectedInvoice: null,
   invoiceItems: [],
+  invoiceHistory: [],
   loading: false,
   error: null,
 
@@ -109,6 +119,58 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       set({ invoiceItems: data || [] });
     } catch (error: any) {
       console.error('Error fetching invoice items:', error);
+      set({ error: error.message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchInvoiceHistory: async (id: string) => {
+    try {
+      set({ loading: true, error: null });
+      
+      // In a real implementation, this would fetch from a history table
+      // For now, we'll create some mock history based on the invoice
+      const invoice = get().selectedInvoice;
+      
+      if (invoice) {
+        const history: InvoiceHistory[] = [
+          {
+            timestamp: invoice.created_at || new Date().toISOString(),
+            action: 'created',
+            details: { status: 'draft' }
+          }
+        ];
+        
+        // Add status change events if not draft
+        if (invoice.status !== 'draft') {
+          history.push({
+            timestamp: new Date(new Date(invoice.created_at || '').getTime() + 3600000).toISOString(), // 1 hour after creation
+            action: 'status_changed',
+            details: { status: 'sent' }
+          });
+        }
+        
+        // Add payment recorded event if paid or partially paid
+        if (invoice.status === 'paid' || invoice.status === 'partially_paid') {
+          history.push({
+            timestamp: invoice.payment_date || new Date().toISOString(),
+            action: 'payment_recorded',
+            details: { 
+              status: invoice.status,
+              payment_method: invoice.payment_method,
+              amount: invoice.status === 'partially_paid' ? invoice.partially_paid_amount : invoice.total
+            }
+          });
+        }
+        
+        // Sort by timestamp, newest first
+        history.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        
+        set({ invoiceHistory: history });
+      }
+    } catch (error: any) {
+      console.error('Error fetching invoice history:', error);
       set({ error: error.message });
     } finally {
       set({ loading: false });
@@ -365,7 +427,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       if (error) throw error;
       
       // Update the local state
-      const updatedInvoice = { ...get().selectedInvoice, ...updateData } as Invoice;
+      let updatedInvoice = { ...get().selectedInvoice, ...updateData } as Invoice;
       set({ selectedInvoice: updatedInvoice });
       
       // Update the invoices list too
@@ -373,6 +435,15 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         invoice.id === id ? { ...invoice, ...updateData } : invoice
       );
       set({ invoices: updatedInvoices });
+      
+      // Update the invoice history
+      const history = [...get().invoiceHistory];
+      history.unshift({
+        timestamp: new Date().toISOString(),
+        action: 'status_changed',
+        details: { status }
+      });
+      set({ invoiceHistory: history });
     } catch (error: any) {
       console.error('Error updating invoice status:', error);
       set({ error: error.message });
@@ -469,11 +540,26 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       // Update the invoices list if the invoice exists there
       const invoices = get().invoices;
       const invoiceIndex = invoices.findIndex(invoice => invoice.id === id);
+      
       if (invoiceIndex >= 0) {
         const updatedInvoices = [...invoices];
         updatedInvoices[invoiceIndex] = { ...updatedInvoices[invoiceIndex], ...updateData };
         set({ invoices: updatedInvoices });
       }
+      
+      // Update the invoice history
+      const history = [...get().invoiceHistory];
+      history.unshift({
+        timestamp: new Date().toISOString(),
+        action: 'payment_recorded',
+        details: { 
+          payment_date: paymentDetails.payment_date,
+          payment_method: paymentDetails.payment_method,
+          amount: paymentDetails.amount,
+          is_partially_paid: paymentDetails.is_partially_paid
+        }
+      });
+      set({ invoiceHistory: history });
       
       return updatedInvoice;
     } catch (error: any) {

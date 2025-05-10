@@ -13,7 +13,8 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-  Eye
+  Eye,
+  Send
 } from 'lucide-react';
 import { Invoice } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/helpers';
@@ -269,13 +270,23 @@ const Invoices = () => {
                     <div className="mt-2 flex justify-end">
                       <Link
                         to={`/invoices/${invoice.id}/view`}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-2"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
                         <Eye className="mr-1 h-4 w-4" />
                         View Invoice
                       </Link>
+                      
+                      {invoice.status === 'draft' && (
+                        <Link
+                          to={`/invoices/${invoice.id}`}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          <Send className="mr-1 h-4 w-4" />
+                          Manage
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
