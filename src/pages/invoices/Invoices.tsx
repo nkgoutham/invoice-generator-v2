@@ -278,15 +278,24 @@ const Invoices = () => {
                         View Invoice
                       </Link>
                       
-                      {invoice.status === 'draft' && (
+                      {/* Show different action buttons based on invoice status */}
+                      {invoice.status === 'draft' ? (
+                        <Link
+                          to={`/invoices/${invoice.id}`}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <Edit className="mr-1 h-4 w-4" />
+                          Edit
+                        </Link>
+                      ) : invoice.status === 'sent' || invoice.status === 'overdue' ? (
                         <Link
                           to={`/invoices/${invoice.id}`}
                           className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
-                          <Send className="mr-1 h-4 w-4" />
-                          Manage
+                          <CreditCard className="mr-1 h-4 w-4" />
+                          Record Payment
                         </Link>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>

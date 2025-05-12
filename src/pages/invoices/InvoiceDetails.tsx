@@ -29,8 +29,6 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate, engagementTypes } from '../../utils/helpers';
 import RecordPaymentModal from '../../components/invoices/RecordPaymentModal';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { InvoicePreviewData } from '../../types/invoice';
 import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 
@@ -58,7 +56,6 @@ const InvoiceDetails = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
   const [invoiceRef, setInvoiceRef] = useState<HTMLDivElement | null>(null);
-  const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
   const [billableExpenses, setBillableExpenses] = useState<any[]>([]);
 
   useEffect(() => {
@@ -100,75 +97,6 @@ const InvoiceDetails = () => {
     }
   }, [id, expenses, selectedInvoice]);
 
-  // Prepare preview data for PDF generation
-  useEffect(() => {
-    if (selectedInvoice && profile && invoiceItems) {
-      // @ts-ignore - client data is nested in the response
-      const client = selectedInvoice.clients || {};
-      
-      const data: Partial<InvoicePreviewData> = {
-        issuer: {
-          business_name: profile.business_name || 'Your Business',
-          address: profile.address || '',
-          pan_number: profile.pan_number,
-          phone: profile.phone,
-          logo_url: profile.logo_url,
-          primary_color: profile.primary_color,
-          secondary_color: profile.secondary_color,
-          footer_text: profile.footer_text,
-          gstin: profile.gstin
-        },
-        client: {
-          name: client.name || '',
-          company_name: client.company_name,
-          billing_address: client.billing_address,
-          email: client.email,
-          phone: client.phone,
-          gst_number: client.gst_number
-        },
-        invoice: {
-          invoice_number: selectedInvoice.invoice_number,
-          issue_date: selectedInvoice.issue_date,
-          due_date: selectedInvoice.due_date,
-          subtotal: selectedInvoice.subtotal,
-          tax: selectedInvoice.tax,
-          total: selectedInvoice.total,
-          notes: selectedInvoice.notes,
-          currency: selectedInvoice.currency || 'INR',
-          tax_percentage: selectedInvoice.tax_percentage || 0,
-          tax_name: selectedInvoice.tax_name,
-          engagement_type: selectedInvoice.engagement_type,
-          status: selectedInvoice.status,
-          payment_date: selectedInvoice.payment_date,
-          payment_method: selectedInvoice.payment_method,
-          payment_reference: selectedInvoice.payment_reference,
-          is_partially_paid: selectedInvoice.is_partially_paid,
-          partially_paid_amount: selectedInvoice.partially_paid_amount,
-          is_gst_registered: selectedInvoice.is_gst_registered,
-          gstin: selectedInvoice.gstin,
-          gst_rate: selectedInvoice.gst_rate,
-          is_tds_applicable: selectedInvoice.is_tds_applicable,
-          tds_rate: selectedInvoice.tds_rate
-        }
-      };
-
-      // Handle items based on engagement type
-      if (selectedInvoice.engagement_type === 'milestone') {
-        // For milestone-based, create milestone entries
-        data.invoice!.milestones = invoiceItems.map(item => ({
-          name: item.description || item.milestone_name || 'Milestone',
-          amount: item.amount
-        }));
-      } else {
-        // For other types, use the invoiceItems directly
-        data.invoice!.items = invoiceItems;
-      }
-
-      // Normalize data to ensure all required fields are present
-      setPreviewData(normalizeInvoiceData(data));
-    }
-  }, [selectedInvoice, profile, invoiceItems]);
-  
   const handleStatusChange = async (status: string) => {
     if (!id) return;
     
@@ -217,7 +145,7 @@ const InvoiceDetails = () => {
     }
   };
 
-  const handleSendInvoice = () => {
+  const handleSendInvoice = async () => {
     // @ts-ignore - client data is nested in the response
     const clientEmail = selectedInvoice?.clients?.email;
     
@@ -226,8 +154,17 @@ const InvoiceDetails = () => {
       return;
     }
 
-    toast.success(`Invoice would be sent to ${clientEmail}`);
-    // In a real implementation, you would call an API endpoint to send the email
+    try {
+      // First mark as sent if it's a draft
+      if (selectedInvoice?.status === 'draft') {
+        await updateInvoiceStatus(id!, 'sent');
+      }
+      
+      toast.success(`Invoice would be sent to ${clientEmail}`);
+      // In a real implementation, you would call an API endpoint to send the email
+    } catch (error) {
+      toast.error('Failed to update invoice status');
+    }
   };
 
   const handleEdit = () => {
@@ -608,66 +545,92 @@ const InvoiceDetails = () => {
         )}
         
         <div className="p-4 sm:p-6 flex flex-wrap gap-2">
-          <Link
-            to={`/invoices/${id}/view`}
-            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Eye className="mr-1.5 h-4 w-4" />
-            <span className="hidden xs:inline">View Invoice</span>
-          </Link>
-          
-          <button
-            type="button"
-            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            onClick={handleSendInvoice}
-          >
-            <Send className="mr-1.5 h-4 w-4" />
-            <span className="hidden xs:inline">Send</span>
-          </button>
-          
-          {/* Show Record Payment button for sent, overdue, or partially_paid invoices */}
-          {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue' || selectedInvoice.status === 'partially_paid' || selectedInvoice.status === 'draft') && (
-            <button
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              onClick={() => setShowPaymentModal(true)}
-            >
-              <CreditCardIcon className="mr-1.5 h-4 w-4" />
-              <span className="hidden xs:inline">{selectedInvoice.status === 'partially_paid' ? 'Update Payment' : 'Record Payment'}</span>
-            </button>
-          )}
-          
-          {selectedInvoice.status === 'draft' && (
-            <button
-              type="button"
-              
+          {/* Common action for all statuses */}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/invoices/${id}/view`}
               className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              onClick={() => handleStatusChange('sent')}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <Send className="mr-1.5 h-4 w-4" />
-              <span className="hidden xs:inline">Mark as Sent</span>
-            </button>
-          )}
-          
-          <button
-            type="button"
-            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-            onClick={handleEdit}
-          >
-            <Edit className="mr-1.5 h-4 w-4" />
-            <span className="hidden xs:inline">Edit</span>
-          </button>
-          
-          <button
-            type="button"
-            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            onClick={handleDelete}
-          >
-            <Trash2 className="mr-1.5 h-4 w-4" />
-            <span className="hidden xs:inline">Delete</span>
-          </button>
+              <Eye className="mr-1.5 h-4 w-4" />
+              <span className="hidden xs:inline">View Invoice</span>
+            </Link>
+            
+            {/* Status-specific actions */}
+            {selectedInvoice.status === 'draft' && (
+              <>
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                  onClick={handleEdit}
+                >
+                  <Edit className="mr-1.5 h-4 w-4" />
+                  <span className="hidden xs:inline">Edit</span>
+                </button>
+                
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => handleStatusChange('sent')}
+                >
+                  <Send className="mr-1.5 h-4 w-4" />
+                  <span className="hidden xs:inline">Mark as Sent</span>
+                </button>
+                
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  onClick={handleSendInvoice}
+                >
+                  <Send className="mr-1.5 h-4 w-4" />
+                  <span className="hidden xs:inline">Send</span>
+                </button>
+                
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  <span className="hidden xs:inline">Delete</span>
+                </button>
+              </>
+            )}
+            
+            {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue') && (
+              <>
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  onClick={() => setShowPaymentModal(true)}
+                >
+                  <CreditCardIcon className="mr-1.5 h-4 w-4" />
+                  <span className="hidden xs:inline">Record Payment</span>
+                </button>
+                
+                <button
+                  type="button"
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  onClick={handleSendInvoice}
+                >
+                  <Send className="mr-1.5 h-4 w-4" />
+                  <span className="hidden xs:inline">Send Reminder</span>
+                </button>
+              </>
+            )}
+            
+            {selectedInvoice.status === 'partially_paid' && (
+              <button
+                type="button"
+                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                onClick={() => setShowPaymentModal(true)}
+              >
+                <CreditCardIcon className="mr-1.5 h-4 w-4" />
+                <span className="hidden xs:inline">Update Payment</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
