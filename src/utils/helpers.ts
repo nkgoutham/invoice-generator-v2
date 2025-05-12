@@ -48,28 +48,74 @@ export const calculateDueDate = (issueDate: string, days = 15): string => {
 export const calculateTaxAndTotal = (
   subtotal: number,
   taxPercentage: number = 0,
-  taxName?: string
-): { subtotal: number; tax: number; total: number } => {
+  taxName?: string,
+  isGstRegistered: boolean = false,
+  gstRate: number = 18,
+  isTdsApplicable: boolean = false,
+  tdsRate: number = 10
+): { 
+  subtotal: number; 
+  tax: number; 
+  gst_amount?: number;
+  tds_amount?: number;
+  total: number;
+  amount_payable?: number;
+} => {
   const numericSubtotal = Number(subtotal) || 0;
-  const numericTaxRate = Number(taxPercentage) || 0;
   
-  // Standard forward calculation
-  const calculatedTax = numericSubtotal * (numericTaxRate / 100);
-  const calculatedTotal = numericSubtotal + calculatedTax;
-  
-  return {
-    subtotal: Math.round(numericSubtotal * 100) / 100,
-    tax: Math.round(calculatedTax * 100) / 100,
-    total: Math.round(calculatedTotal * 100) / 100
+  let result: any = {
+    subtotal: Math.round(numericSubtotal * 100) / 100
   };
+  
+  // Handle GST if applicable
+  if (isGstRegistered && gstRate > 0) {
+    const gstAmount = numericSubtotal * (gstRate / 100);
+    result.tax = Math.round(gstAmount * 100) / 100;
+    result.gst_amount = Math.round(gstAmount * 100) / 100;
+    result.total = Math.round((numericSubtotal + gstAmount) * 100) / 100;
+  } else if (taxPercentage > 0) {
+    // Use regular tax if GST is not applicable
+    const taxAmount = numericSubtotal * (taxPercentage / 100);
+    result.tax = Math.round(taxAmount * 100) / 100;
+    result.total = Math.round((numericSubtotal + taxAmount) * 100) / 100;
+  } else {
+    // No tax
+    result.tax = 0;
+    result.total = numericSubtotal;
+  }
+  
+  // Handle TDS if applicable
+  if (isTdsApplicable && tdsRate > 0) {
+    const tdsAmount = numericSubtotal * (tdsRate / 100);
+    result.tds_amount = Math.round(tdsAmount * 100) / 100;
+    result.amount_payable = Math.round((result.total - tdsAmount) * 100) / 100;
+  } else {
+    result.amount_payable = result.total;
+  }
+  
+  return result;
 };
 
 export const calculateInvoiceTotals = (
   formData: Partial<InvoiceFormData>,
   engagementType: string | undefined
-): { subtotal: number; tax: number; total: number } => {
+): { 
+  subtotal: number; 
+  tax: number; 
+  gst_amount?: number;
+  tds_amount?: number;
+  total: number;
+  amount_payable?: number;
+} => {
   const taxPercentage = Number(formData.tax_percentage) || 0;
   const taxName = formData.tax_name;
+  const isGstRegistered = formData.is_gst_registered || false;
+  const gstRate = Number(formData.gst_rate) || 18;
+  
+  // Determine if TDS is applicable
+  // Auto-enable TDS if subtotal > ₹30,000 and currency is INR, unless explicitly disabled
+  let isTdsApplicable = formData.is_tds_applicable;
+  const tdsRate = Number(formData.tds_rate) || 10;
   
   let calculatedSubtotal = 0;
   
@@ -94,7 +140,22 @@ export const calculateInvoiceTotals = (
     }, 0);
   }
   
-  return calculateTaxAndTotal(calculatedSubtotal, taxPercentage, taxName);
+  // Auto-enable TDS if subtotal > ₹30,000 and currency is INR, unless explicitly disabled
+  if (isTdsApplicable === undefined && formData.currency === 'INR' && calculatedSubtotal > 30000) {
+    isTdsApplicable = true;
+  } else if (isTdsApplicable === undefined) {
+    isTdsApplicable = false;
+  }
+  
+  return calculateTaxAndTotal(
+    calculatedSubtotal, 
+    taxPercentage, 
+    taxName, 
+    isGstRegistered, 
+    gstRate, 
+    isTdsApplicable, 
+    tdsRate
+  );
 };
 
 export function truncateText(text: string, maxLength: number): string {

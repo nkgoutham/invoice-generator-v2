@@ -179,7 +179,8 @@ export function normalizeInvoiceData(data: Partial<InvoicePreviewData>): Invoice
       logo_url: data.issuer?.logo_url,
       primary_color: data.issuer?.primary_color || '#3B82F6',
       secondary_color: data.issuer?.secondary_color || '#0EA5E9',
-      footer_text: data.issuer?.footer_text || 'Thank you for your business!'
+      footer_text: data.issuer?.footer_text || 'Thank you for your business!',
+      gstin: data.issuer?.gstin
     },
     client: {
       name: data.client?.name || '',
@@ -209,7 +210,16 @@ export function normalizeInvoiceData(data: Partial<InvoicePreviewData>): Invoice
       payment_reference: data.invoice?.payment_reference,
       is_partially_paid: data.invoice?.is_partially_paid || false,
       partially_paid_amount: data.invoice?.partially_paid_amount,
-      status: data.invoice?.status || 'draft'
+      status: data.invoice?.status || 'draft',
+      // GST and TDS fields
+      is_gst_registered: data.invoice?.is_gst_registered || false,
+      gstin: data.invoice?.gstin,
+      gst_rate: data.invoice?.gst_rate || 18,
+      gst_amount: data.invoice?.gst_amount,
+      is_tds_applicable: data.invoice?.is_tds_applicable || false,
+      tds_rate: data.invoice?.tds_rate || 10,
+      tds_amount: data.invoice?.tds_amount,
+      amount_payable: data.invoice?.amount_payable
     }
   };
 }

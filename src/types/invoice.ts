@@ -24,6 +24,12 @@ export interface InvoiceFormData {
   payment_method?: string;
   payment_reference?: string;
   status?: string;
+  // New fields for GST and TDS
+  is_gst_registered?: boolean;
+  gstin?: string;
+  gst_rate?: number;
+  is_tds_applicable?: boolean;
+  tds_rate?: number;
 }
 
 export interface InvoicePreviewData {
@@ -36,6 +42,7 @@ export interface InvoicePreviewData {
     primary_color?: string;
     secondary_color?: string;
     footer_text?: string;
+    gstin?: string; // Added GSTIN for issuer
   };
   client: {
     name: string;
@@ -80,6 +87,15 @@ export interface InvoicePreviewData {
     is_partially_paid?: boolean;
     partially_paid_amount?: number;
     status?: string;
+    // New fields for GST and TDS
+    is_gst_registered?: boolean;
+    gstin?: string;
+    gst_rate?: number;
+    gst_amount?: number;
+    is_tds_applicable?: boolean;
+    tds_rate?: number;
+    tds_amount?: number;
+    amount_payable?: number; // Final amount after TDS deduction
   };
 }
 

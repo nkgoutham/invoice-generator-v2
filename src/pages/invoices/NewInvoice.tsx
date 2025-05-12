@@ -50,6 +50,9 @@ const NewInvoice = () => {
   const [subtotal, setSubtotal] = useState(0);
   const [tax, setTax] = useState(0);
   const [total, setTotal] = useState(0);
+  const [gstAmount, setGstAmount] = useState(0);
+  const [tdsAmount, setTdsAmount] = useState(0);
+  const [amountPayable, setAmountPayable] = useState(0);
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
   const [clientEngagementModel, setClientEngagementModel] = useState<EngagementModel | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -68,7 +71,11 @@ const NewInvoice = () => {
       tax_percentage: 0,
       items: [{ description: '', quantity: 1, rate: 0, amount: 0 }],
       milestones: [{ name: 'Milestone 1', amount: 0 }],
-      engagement_type: 'service' // Set a default engagement type
+      engagement_type: 'service', // Set a default engagement type
+      is_gst_registered: false,
+      gst_rate: 18,
+      is_tds_applicable: false,
+      tds_rate: 10
     }
   });
   
@@ -90,6 +97,10 @@ const NewInvoice = () => {
   const watchTaxPercentage = watch('tax_percentage');
   const watchTaxName = watch('tax_name');
   const watchNotes = watch('notes');
+  const watchIsGstRegistered = watch('is_gst_registered');
+  const watchGstRate = watch('gst_rate');
+  const watchIsTdsApplicable = watch('is_tds_applicable');
+  const watchTdsRate = watch('tds_rate');
   
   // Calculate invoice totals based on engagement type
   const calculateTotals = useCallback(() => {
@@ -101,14 +112,37 @@ const NewInvoice = () => {
       setSubtotal(results.subtotal);
       setTax(results.tax);
       setTotal(results.total);
+      
+      // Set GST and TDS amounts if applicable
+      if (results.gst_amount !== undefined) {
+        setGstAmount(results.gst_amount);
+      }
+      
+      if (results.tds_amount !== undefined) {
+        setTdsAmount(results.tds_amount);
+      }
+      
+      if (results.amount_payable !== undefined) {
+        setAmountPayable(results.amount_payable);
+      } else {
+        setAmountPayable(results.total);
+      }
+      
+      // Auto-enable TDS for INR invoices over ₹30,000 if not explicitly set
+      if (formData.currency === 'INR' && results.subtotal > 30000 && formData.is_tds_applicable === undefined) {
+        setValue('is_tds_applicable', true);
+      }
     } catch (error) {
       console.error('Error calculating totals:', error);
       // Fallback to zero values in case of calculation error
       setSubtotal(0);
       setTax(0);
       setTotal(0);
+      setGstAmount(0);
+      setTdsAmount(0);
+      setAmountPayable(0);
     }
-  }, [watch, watchEngagementType]);
+  }, [watch, watchEngagementType, setValue]);
   
   // Update item amount when quantity or rate changes
   const updateItemAmount = useCallback((index: number, quantity: number, rate: number) => {
@@ -164,6 +198,10 @@ const NewInvoice = () => {
     watchEngagementType, 
     watchTaxPercentage,
     watchTaxName,
+    watchIsGstRegistered,
+    watchGstRate,
+    watchIsTdsApplicable,
+    watchTdsRate,
     calculateTotals
   ]);
   
@@ -193,6 +231,23 @@ const NewInvoice = () => {
         setValue('engagement_type', existingInvoice.engagement_type);
         setValue('tax_percentage', existingInvoice.tax_percentage);
         setValue('tax_name', existingInvoice.tax_name || '');
+        
+        // Set GST and TDS fields if they exist
+        if (existingInvoice.is_gst_registered !== undefined) {
+          setValue('is_gst_registered', existingInvoice.is_gst_registered);
+        }
+        if (existingInvoice.gstin) {
+          setValue('gstin', existingInvoice.gstin);
+        }
+        if (existingInvoice.gst_rate) {
+          setValue('gst_rate', existingInvoice.gst_rate);
+        }
+        if (existingInvoice.is_tds_applicable !== undefined) {
+          setValue('is_tds_applicable', existingInvoice.is_tds_applicable);
+        }
+        if (existingInvoice.tds_rate) {
+          setValue('tds_rate', existingInvoice.tds_rate);
+        }
         
         // Set items based on engagement type
         if (existingInvoice.engagement_type === 'milestone' && existingInvoice.milestones) {
@@ -263,7 +318,8 @@ const NewInvoice = () => {
         logo_url: profile?.logo_url || undefined,
         primary_color: profile?.primary_color,
         secondary_color: profile?.secondary_color,
-        footer_text: profile?.footer_text
+        footer_text: profile?.footer_text,
+        gstin: watchIsGstRegistered ? watch('gstin') : undefined
       },
       client: {
         name: selectedClient?.name || '',
@@ -294,7 +350,16 @@ const NewInvoice = () => {
         engagement_type: watchEngagementType,
         items: watchEngagementType !== 'milestone' ? watchItems : undefined,
         milestones: watchEngagementType === 'milestone' ? watchMilestones : undefined,
-        status: 'draft'
+        status: 'draft',
+        // GST and TDS fields
+        is_gst_registered: watchIsGstRegistered,
+        gstin: watch('gstin'),
+        gst_rate: watchGstRate,
+        gst_amount: gstAmount,
+        is_tds_applicable: watchIsTdsApplicable,
+        tds_rate: watchTdsRate,
+        tds_amount: tdsAmount,
+        amount_payable: amountPayable
       }
     };
     
@@ -345,7 +410,13 @@ const NewInvoice = () => {
         currency: formValues.currency,
         engagement_type: formValues.engagement_type,
         tax_percentage: formValues.tax_percentage,
-        tax_name: formValues.tax_name
+        tax_name: formValues.tax_name,
+        // GST and TDS fields
+        is_gst_registered: formValues.is_gst_registered,
+        gstin: formValues.gstin,
+        gst_rate: formValues.gst_rate,
+        is_tds_applicable: formValues.is_tds_applicable,
+        tds_rate: formValues.tds_rate
       };
       
       // Prepare invoice items based on engagement type
@@ -566,6 +637,8 @@ const NewInvoice = () => {
           <TaxSettings 
             register={register} 
             control={control}
+            watch={watch}
+            setValue={setValue}
             updateTaxSettings={updateTaxSettings}
           />
           
@@ -575,6 +648,14 @@ const NewInvoice = () => {
             total={total}
             selectedCurrency={selectedCurrency}
             taxPercentage={watchTaxPercentage}
+            taxName={watchTaxName}
+            isGstRegistered={watchIsGstRegistered}
+            gstRate={watchGstRate}
+            gstAmount={gstAmount}
+            isTdsApplicable={watchIsTdsApplicable}
+            tdsRate={watchTdsRate}
+            tdsAmount={tdsAmount}
+            amountPayable={amountPayable}
           />
           
           <InvoiceNotes register={register} />
