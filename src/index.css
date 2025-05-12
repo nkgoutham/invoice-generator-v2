@@ -324,6 +324,17 @@ button, a {
   color-adjust: exact !important;
 }
 
+/* Hide elements in PDF mode but display normally otherwise */
+.pdf-hidden {
+  display: block !important;
+}
+
+/* In PDF mode, hide elements with pdf-hidden class */
+.pdf-mode .pdf-hidden {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 /* Force desktop layout for all components in PDF mode */
 .pdf-mode .flex-col {
   flex-direction: row !important;
@@ -366,6 +377,26 @@ button, a {
   align-items: center !important;
 }
 
+/* Fix specific alignment issues in PDF mode */
+.pdf-mode .flex.items-center.text-sm {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.pdf-mode .flex.items-center svg {
+  margin-right: 0.5rem !important;
+}
+
+.pdf-mode .flex.flex-col.sm\:flex-row {
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+.pdf-mode .flex.flex-col.sm\:flex-row > div {
+  margin-top: 0 !important;
+  margin-right: 1rem !important;
+}
+
 /* Print styles */
 @media print {
   body {
@@ -378,12 +409,12 @@ button, a {
   }
   
   /* Hide elements not needed in print */
-  .print\\:hidden {
+  .print\:hidden {
     display: none !important;
   }
   
   /* Remove shadows in print */
-  .print\\:shadow-none {
+  .print\:shadow-none {
     box-shadow: none !important;
   }
   
@@ -391,7 +422,7 @@ button, a {
   .hidden.sm\:block.print\:block,
   .hidden.md\:block.print\:block,
   .hidden.lg\:block.print\:block,
-  .print\\:block {
+  .print\:block {
     display: block !important;
   }
   
@@ -405,7 +436,7 @@ button, a {
   }
   
   /* Grid layout for print */
-  .print\\:grid-cols-2 {
+  .print\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
   
@@ -510,7 +541,7 @@ img.loaded {
 }
 
 /* Invoice preview specific styles */
-.invoice-preview-container {
+.invoice-container {
   position: relative;
   z-index: 1;
   background-color: white;
@@ -536,17 +567,6 @@ img.loaded {
 /* Classes to force desktop layout for PDF generation */
 .pdf-ready .flex-col {
   display: flex !important;
-}
-
-/* Hide elements in PDF mode */
-.pdf-hidden {
-  display: block;
-  visibility: visible;
-}
-
-.pdf-mode .pdf-hidden {
-  display: none !important;
-  visibility: hidden !important;
 }
 
 /* Ensure proper alignment in PDF mode */

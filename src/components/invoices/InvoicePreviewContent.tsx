@@ -1,10 +1,6 @@
 import { useRef } from 'react';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { InvoicePreviewData } from '../../types/invoice';
-import { transformInvoiceData } from '../../utils/invoiceDataTransform';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import toast from 'react-hot-toast';
 
 interface InvoicePreviewContentProps {
   data: InvoicePreviewData;
@@ -12,11 +8,9 @@ interface InvoicePreviewContentProps {
 }
 
 const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
-  data: rawData,
+  data,
   allowDownload = true
 }) => {
-  // Transform data based on engagement type to ensure consistent display
-  const data = transformInvoiceData(rawData);
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   const currencySymbol = data.invoice.currency === 'USD' ? '$' : '₹';
@@ -55,53 +49,6 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
     return methods[method] || 'Other';
   };
 
-  const handleDownloadPDF = async () => {
-    if (!invoiceRef.current) return;
-    
-    try {
-      // Create a clone of the invoice element to apply PDF-specific styling without affecting the visible element
-      const invoiceClone = invoiceRef.current.cloneNode(true) as HTMLElement;
-      invoiceClone.classList.add('pdf-mode');
-      
-      // Temporarily append to the document but hide it
-      invoiceClone.style.position = 'absolute';
-      invoiceClone.style.left = '-9999px';
-      invoiceClone.style.width = '1024px'; // Force desktop width
-      document.body.appendChild(invoiceClone);
-      
-      const canvas = await html2canvas(invoiceClone, {
-        scale: 1.5, // Higher quality
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#FFFFFF',
-        windowWidth: 1200, // Force desktop-like rendering
-        width: 1024 // Fixed width to ensure desktop layout
-      });
-      
-      // Remove the clone after canvas generation
-      document.body.removeChild(invoiceClone);
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with compression
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true // Enable compression
-      });
-      
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`Invoice-${data.invoice.invoice_number}.pdf`);
-      toast.success('PDF downloaded successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
-    }
-  };
-
   return (
     <div className="bg-white min-h-full relative overflow-hidden pdf-ready" ref={invoiceRef}>
       {/* Background abstract shapes for a modern look */}
@@ -114,10 +61,10 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
         style={{ backgroundColor: secondaryColor }}
       ></div>
       
+      {/* Download button - Only visible when viewing, not in PDF */}
       {allowDownload && (
-        <div className="absolute top-4 right-4 z-10 print:hidden">
+        <div className="absolute top-4 right-4 z-10 print:hidden pdf-hidden">
           <button
-            onClick={handleDownloadPDF}
             className="bg-white rounded-md shadow-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,9 +116,9 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
               {data.issuer.address && (
                 <p className="text-gray-600 mt-2 text-sm whitespace-pre-line leading-relaxed">{data.issuer.address}</p>
               )}
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 flex flex-col sm:flex-row sm:space-x-3">
                 {data.issuer.phone && (
-                  <div className="inline-flex items-center text-gray-600 text-sm">
+                  <div className="flex items-center text-gray-600 text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
@@ -179,7 +126,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                   </div>
                 )}
                 {data.issuer.pan_number && (
-                  <div className="inline-flex items-center text-gray-600 text-sm ml-0 md:ml-3 print:ml-3">
+                  <div className="flex items-center text-gray-600 text-sm mt-1 sm:mt-0">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
