@@ -14,7 +14,9 @@ import {
   AlertCircle,
   Clock,
   Eye,
-  Send
+  Send,
+  Edit,
+  CreditCard
 } from 'lucide-react';
 import { Invoice } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/helpers';
