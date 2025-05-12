@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInvoiceStore } from '../../store/invoiceStore';
 import { useProfileStore } from '../../store/profileStore';
@@ -7,7 +7,10 @@ import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 import { InvoicePreviewData } from '../../types/invoice';
 import InvoicePreviewContent from '../../components/invoices/InvoicePreviewContent';
 import RecordPaymentModal from '../../components/invoices/RecordPaymentModal';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
+import { Download } from 'lucide-react';
 
 const InvoiceView = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,9 +20,10 @@ const InvoiceView = () => {
   const { profile, bankingInfo, fetchProfile, fetchBankingInfo } = useProfileStore();
   const { getClient } = useClientStore();
   
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [client, setClient] = useState<any>(null);
+  const invoiceRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (id) {
@@ -34,7 +38,6 @@ const InvoiceView = () => {
         await fetchProfile(selectedInvoice.user_id);
         await fetchBankingInfo(selectedInvoice.user_id);
         
-        // Load client details
         try {
           const clientData = await getClient(selectedInvoice.client_id);
           setClient(clientData);
@@ -106,18 +109,76 @@ const InvoiceView = () => {
         data.invoice!.items = invoiceItems;
       }
       
-      // Normalize data to ensure all required fields are present
+      // Normalize to ensure all required fields are present
       setPreviewData(normalizeInvoiceData(data));
     }
   }, [selectedInvoice, profile, client, bankingInfo, invoiceItems]);
-
+  
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+    
+    setIsGeneratingPdf(true);
+    
+    try {
+      // Create a clone of the invoice element to apply PDF-specific styling
+      const invoiceClone = invoiceRef.current.cloneNode(true) as HTMLElement;
+      
+      // Apply PDF-specific styling
+      invoiceClone.classList.add('pdf-mode');
+      
+      // Remove any download buttons from the clone
+      const downloadButtons = invoiceClone.querySelectorAll('.pdf-hidden');
+      downloadButtons.forEach(button => {
+        button.remove();
+      });
+      
+      // Temporarily append to the document but hide it
+      invoiceClone.style.position = 'absolute';
+      invoiceClone.style.left = '-9999px';
+      invoiceClone.style.width = '1024px'; // Force desktop width for consistency
+      document.body.appendChild(invoiceClone);
+      
+      const canvas = await html2canvas(invoiceClone, {
+        scale: 2, // Increase scale for better quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        windowWidth: 1200, // Force desktop-like rendering
+        width: 1024 // Fixed width to ensure desktop layout
+      });
+      
+      // Remove the clone after canvas generation
+      document.body.removeChild(invoiceClone);
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.95); // Use higher quality JPEG
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true // Enable compression
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Invoice-${selectedInvoice?.invoice_number}.pdf`);
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+  
   const handleRecordPayment = async (paymentDetails: any) => {
     if (!id) return;
 
     try {
       await recordPayment(id, paymentDetails);
       toast.success('Payment recorded successfully');
-      setShowPaymentModal(false);
       // Refresh the invoice data
       fetchInvoice(id);
     } catch (error) {
@@ -138,6 +199,7 @@ const InvoiceView = () => {
   
   return (
     <div className="fixed inset-0 bg-gray-100 overflow-auto">
+      {/* Fixed position buttons - properly marked with pdf-hidden class */}
       <div className="fixed top-4 right-4 z-10 space-x-2 print:hidden pdf-hidden">
         {showRecordPayment && (
           <button
@@ -148,19 +210,28 @@ const InvoiceView = () => {
           </button>
         )}
         <button
-          onClick={() => navigate('/invoices')}
-          className="bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-md shadow-md text-sm font-medium border border-gray-300"
+          onClick={handleDownloadPDF}
+          disabled={isGeneratingPdf}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow-md text-sm font-medium flex items-center"
         >
-          Back to Invoices
+          <Download className="mr-2 h-4 w-4" />
+          {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
         </button>
       </div>
       
-      {previewData && <InvoicePreviewContent data={previewData} allowDownload={false} />}
+      {previewData && (
+        <div 
+          ref={invoiceRef} 
+          className="invoice-container"
+        >
+          <InvoicePreviewContent data={previewData} allowDownload={false} />
+        </div>
+      )}
       
       {/* Payment Recording Modal */}
       <RecordPaymentModal 
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        isOpen={false}
+        onClose={() => {}}
         onSave={handleRecordPayment}
         invoice={selectedInvoice}
       />
