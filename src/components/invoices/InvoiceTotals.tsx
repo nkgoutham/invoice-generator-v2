@@ -69,7 +69,7 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
           {/* TDS Section */}
           {isTdsApplicable && (
             <>
-              <div className="flex justify-between text-red-600">
+              <div className="flex justify-between text-red-600 pt-3">
                 <span className="text-sm font-medium">
                   TDS Deduction ({tdsRate || 10}%):
                 </span>

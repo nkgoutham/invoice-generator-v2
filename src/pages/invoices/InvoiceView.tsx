@@ -7,8 +7,8 @@ import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 import { InvoicePreviewData } from '../../types/invoice';
 import InvoicePreviewContent from '../../components/invoices/InvoicePreviewContent';
 import RecordPaymentModal from '../../components/invoices/RecordPaymentModal';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 
 const InvoiceView = () => {
@@ -22,6 +22,7 @@ const InvoiceView = () => {
   const [client, setClient] = useState<any>(null);
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (id) {
@@ -138,6 +139,60 @@ const InvoiceView = () => {
     }
   };
   
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+    
+    try {
+      // Create a clone of the element to apply PDF-specific styling
+      const invoiceClone = invoiceRef.current.cloneNode(true) as HTMLElement;
+      invoiceClone.classList.add('pdf-mode');
+      
+      // Hide UI elements for PDF export
+      const downloadButton = invoiceClone.querySelector('.pdf-hidden');
+      if (downloadButton) {
+        downloadButton.remove();
+      }
+      
+      // Position off-screen during capturing
+      invoiceClone.style.position = 'absolute';
+      invoiceClone.style.left = '-9999px';
+      invoiceClone.style.width = '1024px';
+      document.body.appendChild(invoiceClone);
+      
+      // Generate PDF
+      const canvas = await html2canvas(invoiceClone, {
+        scale: 1.5,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF',
+        windowWidth: 1200,
+        width: 1024
+      });
+      
+      document.body.removeChild(invoiceClone);
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Invoice-${selectedInvoice?.invoice_number}.pdf`);
+      
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+  
   if (loading || !selectedInvoice || !previewData) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -149,7 +204,7 @@ const InvoiceView = () => {
   const showRecordPayment = ['draft', 'sent', 'overdue', 'partially_paid'].includes(selectedInvoice.status);
   
   return (
-    <div className="fixed inset-0 bg-gray-100 overflow-auto">
+    <div className="fixed inset-0 bg-gray-100 overflow-auto" ref={invoiceRef}>
       <div className="fixed top-4 right-4 z-10 space-x-2 print:hidden pdf-hidden">
         {showRecordPayment && (
           <button
@@ -178,16 +233,6 @@ const InvoiceView = () => {
       />
     </div>
   );
-  
-  // Function to handle PDF download
-  function handleDownloadPDF() {
-    // This function is implemented in InvoicePreviewContent
-    // The button in the UI will trigger the download
-    const downloadButton = document.querySelector('.pdf-hidden button') as HTMLButtonElement;
-    if (downloadButton) {
-      downloadButton.click();
-    }
-  }
 };
 
 export default InvoiceView;

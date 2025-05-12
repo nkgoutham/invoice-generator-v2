@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { InvoicePreviewData } from '../../types/invoice';
-import { transformInvoiceData } from '../../utils/invoiceDataTransform';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
@@ -16,7 +15,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
   allowDownload = true
 }) => {
   // Transform data based on engagement type to ensure consistent display
-  const data = transformInvoiceData(rawData);
+  const data = rawData;
   const invoiceRef = useRef<HTMLDivElement>(null);
   
   const currencySymbol = data.invoice.currency === 'USD' ? '$' : '₹';
@@ -56,7 +55,10 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
   };
 
   const handleDownloadPDF = async () => {
-    if (!invoiceRef.current) return;
+    if (!invoiceRef.current) {
+      toast.error('Cannot generate PDF at this time');
+      return;
+    }
     
     try {
       const invoiceClone = invoiceRef.current.cloneNode(true) as HTMLElement;
@@ -108,7 +110,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
   };
 
   return (
-    <div className="bg-white min-h-full relative overflow-hidden pdf-ready invoice-container" ref={invoiceRef}>
+    <div className="bg-white min-h-full relative overflow-hidden invoice-container" ref={invoiceRef}>
       {/* Background abstract shapes for a modern look */}
       <div 
         className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10 hidden sm:block print:block pdf-force-show"
@@ -198,12 +200,12 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                   </div>
                 )}
                 
-                {data.issuer.gstin && (
+                {data.invoice.is_gst_registered && data.invoice.gstin && (
                   <div className="inline-flex items-center text-gray-600 text-sm ml-0 md:ml-3 print:ml-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="leading-none">GSTIN: {data.issuer.gstin}</span>
+                    <span className="leading-none">GSTIN: {data.invoice.gstin}</span>
                   </div>
                 )}
               </div>
@@ -542,13 +544,13 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
               >
                 <span className="text-gray-600 font-medium">
                   {data.invoice.is_gst_registered 
-                    ? `GST (${data.invoice.gst_rate || data.invoice.tax_percentage}%)` 
+                    ? `GST (${data.invoice.gst_rate || 18}%)` 
                     : data.invoice.tax_name 
                       ? `${data.invoice.tax_name} (${data.invoice.tax_percentage}%)` 
                       : `Tax (${data.invoice.tax_percentage}%)`}:
                 </span>
                 <span className="text-gray-800 font-medium">
-                  {formatCurrency(data.invoice.gst_amount || data.invoice.tax, data.invoice.currency)}
+                  {formatCurrency(data.invoice.tax, data.invoice.currency)}
                 </span>
               </div>
             )}
@@ -578,7 +580,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                     TDS Deduction ({data.invoice.tds_rate || 10}%):
                   </span>
                   <span className="text-red-600 font-medium">
-                    - {formatCurrency(data.invoice.tds_amount || 0, data.invoice.currency)}
+                    - {formatCurrency(data.invoice.tds_amount || (data.invoice.subtotal * (data.invoice.tds_rate || 10) / 100), data.invoice.currency)}
                   </span>
                 </div>
                 
@@ -588,7 +590,9 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                 >
                   <span className="text-base text-gray-800 font-bold">Amount Payable:</span>
                   <span className="text-base font-bold text-green-600">
-                    {formatCurrency(data.invoice.amount_payable || data.invoice.total, data.invoice.currency)}
+                    {formatCurrency(data.invoice.amount_payable || 
+                      (data.invoice.total - (data.invoice.subtotal * (data.invoice.tds_rate || 10) / 100)), 
+                    data.invoice.currency)}
                   </span>
                 </div>
                 

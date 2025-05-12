@@ -238,7 +238,9 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         .select()
         .single();
       
-      if (invoiceError) throw invoiceError;
+      if (invoiceError) {
+        throw new Error(`Error creating invoice: ${invoiceError.message}`);
+      }
       
       if (invoice) {
         // Format items based on engagement type
@@ -292,7 +294,9 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           .from('invoice_items')
           .insert(formattedItems);
         
-        if (itemsError) throw itemsError;
+        if (itemsError) {
+          throw new Error(`Error creating invoice items: ${itemsError.message}`);
+        }
         
         // Fetch the updated invoices list
         if (invoiceData.user_id) {
@@ -305,8 +309,8 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       return null;
     } catch (error: any) {
       console.error('Error creating invoice:', error);
-      set({ error: error.message });
-      toast.error('Failed to create invoice: ' + error.message);
+      set({ error: 'Failed to create invoice. Please ensure all required fields are filled.' });
+      toast.error('Failed to create invoice. Please try again.');
       return null;
     } finally {
       set({ loading: false });
@@ -325,7 +329,9 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         .select()
         .single();
       
-      if (invoiceError) throw invoiceError;
+      if (invoiceError) {
+        throw new Error(`Error updating invoice: ${invoiceError.message}`);
+      }
       
       // If invoice items are provided, update them too
       if (invoiceItems && updatedInvoice) {
@@ -335,7 +341,9 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           .delete()
           .eq('invoice_id', id);
         
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          throw new Error(`Error deleting existing invoice items: ${deleteError.message}`);
+        }
         
         // Format items based on engagement type
         let formattedItems;
@@ -378,7 +386,9 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           .from('invoice_items')
           .insert(formattedItems);
         
-        if (insertError) throw insertError;
+        if (insertError) {
+          throw new Error(`Error inserting new invoice items: ${insertError.message}`);
+        }
       }
       
       // Update the invoices list
@@ -393,8 +403,8 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       return null;
     } catch (error: any) {
       console.error('Error updating invoice:', error);
-      set({ error: error.message });
-      toast.error('Failed to update invoice: ' + error.message);
+      set({ error: 'Failed to update invoice. Please ensure all required fields are filled.' });
+      toast.error('Failed to update invoice. Please try again.');
       return null;
     } finally {
       set({ loading: false });

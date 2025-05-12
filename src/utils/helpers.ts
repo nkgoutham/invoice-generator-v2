@@ -119,6 +119,7 @@ export const calculateInvoiceTotals = (
   let calculatedSubtotal = 0;
   
   if (engagementType === 'milestone' && formData.milestones) {
+    // For milestone-based: sum of all milestone amounts
     calculatedSubtotal = formData.milestones.reduce((sum, milestone) => {
       // Handle both number and string types for amount
       let amount = 0;
@@ -130,9 +131,11 @@ export const calculateInvoiceTotals = (
       return sum + amount;
     }, 0);
   } else if ((engagementType === 'retainership' || engagementType === 'project') && formData.items && formData.items.length > 0) {
+    // For retainership or project: use the single item amount
     const amount = parseFloat(formData.items[0]?.amount?.toString() || '0') || 0;
     calculatedSubtotal = amount;
   } else if (formData.items) {
+    // For service or other types: sum of all line items
     calculatedSubtotal = formData.items.reduce((sum, item) => {
       const amount = parseFloat(item.amount?.toString() || '0') || 0;
       return sum + amount;
