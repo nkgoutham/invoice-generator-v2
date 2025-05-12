@@ -105,6 +105,8 @@ export interface PaymentDetails {
   payment_reference: string;
   amount: number;
   is_partially_paid: boolean;
+  amount: number;
+  is_partially_paid: boolean;
   status?: string;
 }
 

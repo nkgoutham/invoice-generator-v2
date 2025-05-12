@@ -520,8 +520,32 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       // Determine if this is a full or partial payment
       const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
       
+      // Check if we have a valid ID
+      if (!id) {
+        throw new Error("Invoice not found");
+      }
+      
+      // First, check if the invoice is already paid to prevent duplicate payments
+      const { data: existingInvoice, error: fetchError } = await supabase
+        .from('invoices')
+        .select('id, status')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // If the invoice is already fully paid, prevent recording another payment
+      if (existingInvoice.status === 'paid') {
+        throw new Error('This invoice has already been paid');
+      }
+      
+      // Determine if this is a full or partial payment
+      const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
+      
       // Prepare the update data
       const updateData = {
+        payment_date,
+        payment_method,
         payment_date,
         payment_method,
         payment_reference,
@@ -562,6 +586,11 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       history.unshift({
         timestamp: new Date().toISOString(),
         action: 'payment_recorded',
+        details: { 
+          payment_date: paymentDetails.payment_date,
+          payment_method: paymentDetails.payment_method,
+          amount: paymentDetails.amount,
+          is_partially_paid: paymentDetails.is_partially_paid
         details: { 
           payment_date: paymentDetails.payment_date,
           payment_method: paymentDetails.payment_method,
