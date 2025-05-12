@@ -118,7 +118,8 @@ const InvoiceDetails = () => {
           logo_url: profile.logo_url,
           primary_color: profile.primary_color,
           secondary_color: profile.secondary_color,
-          footer_text: profile.footer_text
+          footer_text: profile.footer_text,
+          gstin: profile.gstin
         },
         client: {
           name: client.name || '',
@@ -138,13 +139,19 @@ const InvoiceDetails = () => {
           notes: selectedInvoice.notes,
           currency: selectedInvoice.currency || 'INR',
           tax_percentage: selectedInvoice.tax_percentage || 0,
+          tax_name: selectedInvoice.tax_name,
           engagement_type: selectedInvoice.engagement_type,
           status: selectedInvoice.status,
           payment_date: selectedInvoice.payment_date,
           payment_method: selectedInvoice.payment_method,
           payment_reference: selectedInvoice.payment_reference,
           is_partially_paid: selectedInvoice.is_partially_paid,
-          partially_paid_amount: selectedInvoice.partially_paid_amount
+          partially_paid_amount: selectedInvoice.partially_paid_amount,
+          is_gst_registered: selectedInvoice.is_gst_registered,
+          gstin: selectedInvoice.gstin,
+          gst_rate: selectedInvoice.gst_rate,
+          is_tds_applicable: selectedInvoice.is_tds_applicable,
+          tds_rate: selectedInvoice.tds_rate
         }
       };
 
@@ -597,14 +604,54 @@ const InvoiceDetails = () => {
                   <span className="text-sm font-medium text-gray-500">Subtotal:</span>
                   <span className="text-sm font-medium text-gray-900">{formatCurrency(selectedInvoice.subtotal, selectedInvoice.currency)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-500">Tax:</span>
-                  <span className="text-sm font-medium text-gray-900">{formatCurrency(selectedInvoice.tax, selectedInvoice.currency)}</span>
-                </div>
+                
+                {/* GST or Tax Section */}
+                {selectedInvoice.is_gst_registered ? (
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">GST ({selectedInvoice.gst_rate || 18}%):</span>
+                    <span className="text-sm font-medium text-gray-900">{formatCurrency(selectedInvoice.tax, selectedInvoice.currency)}</span>
+                  </div>
+                ) : selectedInvoice.tax > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">
+                      {selectedInvoice.tax_name ? `${selectedInvoice.tax_name} (${selectedInvoice.tax_percentage}%)` : `Tax (${selectedInvoice.tax_percentage}%)`}:
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">{formatCurrency(selectedInvoice.tax, selectedInvoice.currency)}</span>
+                  </div>
+                )}
+                
                 <div className="pt-2 border-t border-gray-200 flex justify-between">
                   <span className="text-base font-medium text-gray-900">Total:</span>
                   <span className="text-base font-medium text-blue-600">{formatCurrency(selectedInvoice.total, selectedInvoice.currency)}</span>
                 </div>
+                
+                {/* TDS Section */}
+                {selectedInvoice.is_tds_applicable && (
+                  <>
+                    <div className="flex justify-between text-red-600 pt-2">
+                      <span className="text-sm font-medium">
+                        TDS Deduction ({selectedInvoice.tds_rate || 10}%):
+                      </span>
+                      <span className="text-sm font-medium">
+                        - {formatCurrency((selectedInvoice.subtotal * (selectedInvoice.tds_rate || 10)) / 100, selectedInvoice.currency)}
+                      </span>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-gray-200 flex justify-between">
+                      <span className="text-base font-medium text-gray-900">Amount Payable:</span>
+                      <span className="text-base font-medium text-green-600">
+                        {formatCurrency(
+                          selectedInvoice.total - (selectedInvoice.subtotal * (selectedInvoice.tds_rate || 10)) / 100,
+                          selectedInvoice.currency
+                        )}
+                      </span>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 mt-1 italic">
+                      * TDS will be deducted by client at the time of payment
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -619,8 +666,10 @@ const InvoiceDetails = () => {
         
         <div className="p-4 sm:p-6 flex flex-wrap gap-2">
           <Link
-            to={`/invoices/${id}/preview`}
+            to={`/invoices/${id}/view`}
             className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <Eye className="mr-1.5 h-4 w-4" />
             <span className="hidden xs:inline">View Invoice</span>
