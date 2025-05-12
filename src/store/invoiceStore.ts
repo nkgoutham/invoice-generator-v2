@@ -591,6 +591,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           payment_method: paymentDetails.payment_method,
           amount: paymentDetails.amount,
           is_partially_paid: paymentDetails.is_partially_paid
+        }
         details: { 
           payment_date: paymentDetails.payment_date,
           payment_method: paymentDetails.payment_method,

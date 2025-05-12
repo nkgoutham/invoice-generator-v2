@@ -396,7 +396,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                 </div>
               )}
               
-              {/* Payment Received Information - show if paid or partially paid */}
+              {/* Payment Received Information */}
               {(data.invoice.status === 'paid' || data.invoice.status === 'partially_paid') && (
                 <div 
                   className="mt-4 pt-3 border-t"
@@ -572,4 +572,87 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
             {/* TDS Section */}
             {data.invoice.is_tds_applicable && (
               <>
-                <div
+                <div 
+                  className="flex justify-between p-4 border-t text-sm"
+                  style={{ borderColor: `${primaryColor}20` }}
+                >
+                  <span className="text-red-600 font-medium">
+                    TDS Deduction ({data.invoice.tds_rate || 10}%):
+                  </span>
+                  <span className="text-red-600 font-medium">
+                    - {formatCurrency(data.invoice.tds_amount || (data.invoice.subtotal * (data.invoice.tds_rate || 10) / 100), data.invoice.currency)}
+                  </span>
+                </div>
+                
+                <div 
+                  className="flex justify-between p-4 border-t text-sm bg-green-50"
+                  style={{ borderColor: `${primaryColor}20` }}
+                >
+                  <span className="text-base text-gray-800 font-bold">Amount Payable:</span>
+                  <span className="text-base font-bold text-green-600">
+                    {formatCurrency(data.invoice.amount_payable || 
+                      (data.invoice.total - (data.invoice.subtotal * (data.invoice.tds_rate || 10) / 100)), 
+                    data.invoice.currency)}
+                  </span>
+                </div>
+                
+                <div className="p-3 bg-gray-50 text-xs text-gray-500 italic text-center">
+                  * TDS will be deducted by the client at the time of payment
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* Notes Section */}
+        {data.invoice.notes && (
+          <div 
+            className="mt-8 p-5 rounded-xl"
+            style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              border: `1px solid ${primaryColor}20`,
+              boxShadow: `0 4px 15px rgba(0,0,0,0.03), 0 1px 2px ${primaryColor}10`
+            }}
+          >
+            <h3 
+              className="font-semibold mb-2 flex items-center"
+              style={{ color: primaryColor }}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Notes
+            </h3>
+            <p className="text-sm text-gray-600 whitespace-pre-line">{data.invoice.notes}</p>
+          </div>
+        )}
+        
+        {/* Footer */}
+        <div className="mt-12 text-center">
+          <div 
+            className="p-4 border-t"
+            style={{ borderColor: primaryColor }}
+          >
+            <p 
+              className="text-sm text-gray-500 relative"
+              style={{ textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}
+            >
+              {data.issuer.footer_text || 'Thank you for your business!'}
+            </p>
+            
+            {/* Hidden watermark for paid invoices in print mode */}
+            <div className="hidden print:block absolute inset-0 opacity-5 flex items-center justify-center pointer-events-none" aria-hidden="true">
+              <div className="transform rotate-45 text-8xl font-black text-gray-500">
+                {data.invoice.status === 'paid' ? 'PAID' : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InvoicePreviewContent;
+
+export default InvoicePreviewContent
