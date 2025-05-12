@@ -143,6 +143,7 @@ async function processRecurringInvoices(supabase: SupabaseClient, today: Date) {
             invoice_number: invoiceNumber,
             issue_date: issueDate,
             due_date: dueDateStr,
+            tax_name: templateData.invoice_data.tax_name,
             status: recurringInvoice.auto_send ? 'sent' : 'draft'
           })
           .select()

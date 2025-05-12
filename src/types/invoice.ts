@@ -7,6 +7,7 @@ export interface InvoiceFormData {
   currency: string;
   engagement_type: string;
   tax_percentage: number;
+  tax_name?: string;
   items: Array<{
     description: string;
     quantity: number;
@@ -61,6 +62,7 @@ export interface InvoicePreviewData {
     notes?: string;
     currency: string;
     tax_percentage: number;
+    tax_name?: string;
     engagement_type?: string;
     items?: Array<{
       description: string;

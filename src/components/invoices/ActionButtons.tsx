@@ -1,8 +1,10 @@
-import { Save, Eye } from 'lucide-react';
+import { Save, Send, CreditCard, Eye } from 'lucide-react';
 
 interface ActionButtonsProps {
   loading: boolean;
   onCancel: () => void;
+  onSaveAndSend?: () => void;
+  onSaveAndRecordPayment?: () => void;
   showPreviewLink?: boolean;
   onPreviewClick?: () => void;
 }
@@ -10,6 +12,8 @@ interface ActionButtonsProps {
 const ActionButtons: React.FC<ActionButtonsProps> = ({ 
   loading, 
   onCancel, 
+  onSaveAndSend,
+  onSaveAndRecordPayment,
   showPreviewLink = false,
   onPreviewClick
 }) => {
@@ -31,6 +35,37 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         >
           <Eye className="h-4 w-4 mr-2" />
           Preview
+        </button>
+      )}
+      
+      {onSaveAndRecordPayment && (
+        <button
+          type="button"
+          onClick={onSaveAndRecordPayment}
+          disabled={loading}
+          className="w-full sm:w-auto btn btn-success btn-md group"
+        >
+          <CreditCard className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+          Save & Record Payment
+        </button>
+      )}
+      
+      {onSaveAndSend && (
+        <button
+          type="button"
+          onClick={onSaveAndSend}
+          disabled={loading}
+          className="w-full sm:w-auto btn btn-primary btn-md group"
+        >
+          <Send className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+          {loading ? (
+            <span className="flex items-center">
+              <span className="h-4 w-4 mr-2 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+              Saving...
+            </span>
+          ) : (
+            'Save & Send'
+          )}
         </button>
       )}
       

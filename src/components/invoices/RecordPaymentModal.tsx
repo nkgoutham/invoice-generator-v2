@@ -104,6 +104,8 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     
     setIsSubmitting(true);
     
+    setIsSubmitting(true);
+    
     try {
       await onSave({
         ...paymentDetails,

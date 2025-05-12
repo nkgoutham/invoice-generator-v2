@@ -47,7 +47,8 @@ export const calculateDueDate = (issueDate: string, days = 15): string => {
 
 export const calculateTaxAndTotal = (
   subtotal: number,
-  taxPercentage: number = 0
+  taxPercentage: number = 0,
+  taxName?: string
 ): { subtotal: number; tax: number; total: number } => {
   const numericSubtotal = Number(subtotal) || 0;
   const numericTaxRate = Number(taxPercentage) || 0;
@@ -68,6 +69,7 @@ export const calculateInvoiceTotals = (
   engagementType: string | undefined
 ): { subtotal: number; tax: number; total: number } => {
   const taxPercentage = Number(formData.tax_percentage) || 0;
+  const taxName = formData.tax_name;
   
   let calculatedSubtotal = 0;
   
@@ -92,7 +94,7 @@ export const calculateInvoiceTotals = (
     }, 0);
   }
   
-  return calculateTaxAndTotal(calculatedSubtotal, taxPercentage);
+  return calculateTaxAndTotal(calculatedSubtotal, taxPercentage, taxName);
 };
 
 export function truncateText(text: string, maxLength: number): string {

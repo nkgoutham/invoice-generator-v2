@@ -200,6 +200,7 @@ export function normalizeInvoiceData(data: Partial<InvoicePreviewData>): Invoice
       notes: data.invoice?.notes,
       currency: data.invoice?.currency || 'INR',
       tax_percentage: Number(data.invoice?.tax_percentage) || 0,
+      tax_name: data.invoice?.tax_name || '',
       engagement_type: data.invoice?.engagement_type || 'service',
       items: data.invoice?.items || [],
       milestones: data.invoice?.milestones || [],

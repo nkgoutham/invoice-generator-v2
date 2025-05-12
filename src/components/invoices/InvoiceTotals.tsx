@@ -6,6 +6,7 @@ interface InvoiceTotalsProps {
   total: number;
   selectedCurrency: string;
   taxPercentage: number;
+  taxName?: string;
 }
 
 const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
@@ -13,7 +14,8 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
   tax,
   total,
   selectedCurrency,
-  taxPercentage
+  taxPercentage,
+  taxName
 }) => {
   return (
     <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
@@ -25,7 +27,7 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-sm font-medium text-gray-500">
-              Tax ({taxPercentage || 0}%):
+              {taxName ? `${taxName} (${taxPercentage || 0}%)` : `Tax (${taxPercentage || 0}%)`}:
             </span>
             <span className="text-sm font-medium text-gray-900">{formatCurrency(tax, selectedCurrency)}</span>
           </div>

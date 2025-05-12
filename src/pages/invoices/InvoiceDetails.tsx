@@ -694,7 +694,7 @@ const InvoiceDetails = () => {
         <RecordPaymentModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          onSubmit={handleRecordPayment}
+          onSave={handleRecordPayment}
           invoice={selectedInvoice}
         />
       )}
