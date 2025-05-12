@@ -537,3 +537,30 @@ img.loaded {
 .pdf-ready .flex-col {
   display: flex !important;
 }
+
+/* Hide elements in PDF mode */
+.pdf-hidden {
+  display: block;
+}
+
+.pdf-mode .pdf-hidden {
+  display: none !important;
+}
+
+/* Ensure proper alignment in PDF mode */
+.pdf-mode .inline-flex.items-start {
+  display: flex !important;
+  align-items: flex-start !important;
+}
+
+.pdf-mode .text-left {
+  text-align: left !important;
+}
+
+.pdf-mode .flex-shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+.pdf-mode .mt-0\.5 {
+  margin-top: 0.125rem !important;
+}
