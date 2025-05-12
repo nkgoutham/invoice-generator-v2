@@ -205,6 +205,21 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                 </div>
               </div>
               
+              {/* Display existing payment info if this is an update */}
+              {invoice.status === 'partially_paid' && invoice.partially_paid_amount !== undefined && (
+                <div className="mt-2 bg-blue-50 p-2 rounded text-sm">
+                  <p className="text-blue-700">
+                    Previously paid: {formatCurrency(invoice.partially_paid_amount, invoice.currency)}
+                  </p>
+                  <p className="text-blue-700">
+                    Remaining: {formatCurrency(invoice.total - invoice.partially_paid_amount, invoice.currency)}
+                  </p>
+                  <p className="text-blue-600 font-medium mt-1">
+                    Enter the additional amount you're receiving now.
+                  </p>
+                </div>
+              )}
+              
               {paymentDetails.is_partially_paid && paymentDetails.amount > 0 && (
                 <p className="mt-1 text-sm text-gray-500">
                   Remaining balance: {formatCurrency(invoice.total - paymentDetails.amount, invoice.currency)}

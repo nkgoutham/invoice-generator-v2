@@ -504,31 +504,50 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       }
       
       // First, check if the invoice is already paid to prevent duplicate payments
-      const { data: existingInvoice, error: fetchError } = await supabase
+      const { data: currentInvoice, error: fetchError } = await supabase
         .from('invoices')
-        .select('id, status')
+        .select('id, status, total, partially_paid_amount, is_partially_paid')
         .eq('id', id)
         .single();
         
       if (fetchError) throw fetchError;
       
       // If the invoice is already fully paid, prevent recording another payment
-      if (existingInvoice.status === 'paid') {
+      if (currentInvoice.status === 'paid') {
         throw new Error('This invoice has already been paid');
       }
       
       // Determine if this is a full or partial payment
       const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
       
+      // Calculate the total payment amount
+      let newTotalPaid = amount;
+      
+      // If this is an additional payment for a partially paid invoice
+      if (currentInvoice.is_partially_paid && currentInvoice.partially_paid_amount) {
+        newTotalPaid += currentInvoice.partially_paid_amount;
+      }
+      
+      // Determine if the payment completes the invoice
+      const isPaid = !is_partially_paid || newTotalPaid >= currentInvoice.total;
+      
       // Prepare the update data
-      const updateData = {
+      const updateData: any = {
         payment_date,
         payment_method,
         payment_reference,
-        status: is_partially_paid ? 'partially_paid' : 'paid',
-        is_partially_paid: is_partially_paid || false,
-        partially_paid_amount: is_partially_paid ? amount : undefined
+        status: isPaid ? 'paid' : 'partially_paid', 
+        is_partially_paid: !isPaid,
       };
+      
+      // Only set partially_paid_amount if it's a partial payment
+      if (!isPaid) {
+        updateData.partially_paid_amount = newTotalPaid;
+      } else {
+        // If fully paid, clear the partial payment fields
+        updateData.partially_paid_amount = null;
+        updateData.is_partially_paid = false;
+      }
       
       // Update the invoice with payment details
       const { data: updatedInvoice, error } = await supabase
@@ -566,7 +585,8 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           payment_date: paymentDetails.payment_date,
           payment_method: paymentDetails.payment_method,
           amount: paymentDetails.amount,
-          is_partially_paid: paymentDetails.is_partially_paid
+          is_partially_paid: !isPaid,
+          total_paid: newTotalPaid
         }
       });
       set({ invoiceHistory: history });

@@ -601,6 +601,34 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                 </div>
               </>
             )}
+            
+            {/* Partial Payment Information */}
+            {data.invoice.status === 'partially_paid' && data.invoice.partially_paid_amount !== undefined && (
+              <div 
+                className="flex justify-between p-4 border-t text-sm bg-yellow-50"
+                style={{ borderColor: `${primaryColor}20` }}
+              >
+                <div className="flex-1">
+                  <span className="text-yellow-800 font-medium">
+                    Payment Status:
+                  </span>
+                  <div className="mt-1 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Paid:</span>
+                      <span className="text-green-600 font-medium">
+                        {formatCurrency(data.invoice.partially_paid_amount, data.invoice.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Remaining:</span>
+                      <span className="text-red-600 font-medium">
+                        {formatCurrency(data.invoice.total - data.invoice.partially_paid_amount, data.invoice.currency)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         

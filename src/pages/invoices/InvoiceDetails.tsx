@@ -500,6 +500,24 @@ const InvoiceDetails = () => {
                   <span className="text-base font-medium text-blue-600">{formatCurrency(selectedInvoice.total, selectedInvoice.currency)}</span>
                 </div>
                 
+                {/* Partial Payment Details */}
+                {selectedInvoice.status === 'partially_paid' && selectedInvoice.partially_paid_amount !== undefined && (
+                  <>
+                    <div className="pt-2 border-t border-gray-200 flex justify-between text-sm">
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="text-green-600 font-medium">
+                        {formatCurrency(selectedInvoice.partially_paid_amount, selectedInvoice.currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Remaining Balance:</span>
+                      <span className="text-red-600 font-medium">
+                        {formatCurrency(selectedInvoice.total - selectedInvoice.partially_paid_amount, selectedInvoice.currency)}
+                      </span>
+                    </div>
+                  </>
+                )}
+                
                 {/* TDS Section */}
                 {selectedInvoice.is_tds_applicable && (
                   <>
@@ -568,6 +586,22 @@ const InvoiceDetails = () => {
             <Eye className="mr-1.5 h-4 w-4" />
             <span className="hidden xs:inline">View Invoice</span>
           </Link>
+
+          {/* Show Record/Update Payment button for sent, overdue, or partially paid invoices */}
+          {(selectedInvoice.status === 'sent' || 
+            selectedInvoice.status === 'overdue' || 
+            selectedInvoice.status === 'partially_paid') && (
+            <button
+              type="button"
+              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              onClick={() => setShowPaymentModal(true)}
+            >
+              <CreditCardIcon className="mr-1.5 h-4 w-4" />
+              <span className="hidden xs:inline">
+                {selectedInvoice.status === 'partially_paid' ? 'Update Payment' : 'Record Payment'}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
