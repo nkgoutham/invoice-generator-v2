@@ -19,6 +19,16 @@ export const formatCurrency = (amount: number, currency = 'INR', compact = false
     }).format(amount);
   }
   
+  if (compact && amount > 1000) {
+    // For chart labels, use compact notation
+    return new Intl.NumberFormat(options.locale, {
+      style: 'currency',
+      currency: options.currency,
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(amount);
+  }
+  
   return new Intl.NumberFormat(options.locale, {
     style: 'currency',
     currency: options.currency,

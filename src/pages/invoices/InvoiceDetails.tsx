@@ -127,25 +127,17 @@ const InvoiceDetails = () => {
     if (!id) return;
 
     try {
-      // Update the paymentDetails to include the status
-      const updatedPaymentDetails = {
-        ...paymentDetails,
-        status: paymentDetails.is_partially_paid ? 'partially_paid' : 'paid'
-      };
-
-      await recordPayment(id, updatedPaymentDetails);
+      await recordPayment(id, paymentDetails);
       toast.success('Payment recorded successfully');
       setShowPaymentModal(false);
       // Refresh the invoice data
       fetchInvoice(id);
-      // Navigate back to invoices list after recording payment
-      navigate('/invoices');
     } catch (error) {
       console.error('Error recording payment:', error);
       toast.error('Failed to record payment');
     }
   };
-
+  
   const handleSendInvoice = async () => {
     // @ts-ignore - client data is nested in the response
     const clientEmail = selectedInvoice?.clients?.email;
