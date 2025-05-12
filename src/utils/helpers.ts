@@ -113,8 +113,7 @@ export const calculateInvoiceTotals = (
   const gstRate = Number(formData.gst_rate) || 18;
   
   // Determine if TDS is applicable
-  // Auto-enable TDS if subtotal > ₹30,000 and currency is INR, unless explicitly disabled
-  let isTdsApplicable = formData.is_tds_applicable;
+  let isTdsApplicable = formData.is_tds_applicable || false;
   const tdsRate = Number(formData.tds_rate) || 10;
   
   let calculatedSubtotal = 0;
@@ -141,10 +140,8 @@ export const calculateInvoiceTotals = (
   }
   
   // Auto-enable TDS if subtotal > ₹30,000 and currency is INR, unless explicitly disabled
-  if (isTdsApplicable === undefined && formData.currency === 'INR' && calculatedSubtotal > 30000) {
+  if (formData.is_tds_applicable === undefined && formData.currency === 'INR' && calculatedSubtotal > 30000) {
     isTdsApplicable = true;
-  } else if (isTdsApplicable === undefined) {
-    isTdsApplicable = false;
   }
   
   return calculateTaxAndTotal(

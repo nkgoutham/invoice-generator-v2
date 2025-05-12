@@ -108,7 +108,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
   };
 
   return (
-    <div className="bg-white min-h-full relative overflow-hidden pdf-ready" ref={invoiceRef}>
+    <div className="bg-white min-h-full relative overflow-hidden pdf-ready invoice-container" ref={invoiceRef}>
       {/* Background abstract shapes for a modern look */}
       <div 
         className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10 hidden sm:block print:block pdf-force-show"
@@ -434,14 +434,10 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                     {data.invoice.status === 'partially_paid' && data.invoice.partially_paid_amount !== undefined && (
                       <>
                         <span className="col-span-2 font-medium text-gray-700">Paid:</span>
-                        <span className="col-span-3 text-green-600 font-medium">
-                          {formatCurrency(data.invoice.partially_paid_amount, data.invoice.currency)}
-                        </span>
+                        <span className="col-span-3 text-green-600 font-medium">{formatCurrency(data.invoice.partially_paid_amount, data.invoice.currency)}</span>
                         
                         <span className="col-span-2 font-medium text-gray-700">Balance:</span>
-                        <span className="col-span-3">
-                          {formatCurrency(data.invoice.total - data.invoice.partially_paid_amount, data.invoice.currency)}
-                        </span>
+                        <span className="col-span-3">{formatCurrency(data.invoice.total - data.invoice.partially_paid_amount, data.invoice.currency)}</span>
                       </>
                     )}
                   </div>
@@ -493,9 +489,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                       style={{ transition: 'all 0.2s ease' }}
                     >
                       <td className="py-4 px-4 text-gray-800">{milestone.name}</td>
-                      <td className="py-4 px-4 text-right text-gray-800 font-medium">
-                        {formatCurrency(milestone.amount, data.invoice.currency)}
-                      </td>
+                      <td className="py-4 px-4 text-right text-gray-800 font-medium">{formatCurrency(milestone.amount, data.invoice.currency)}</td>
                     </tr>
                   ))
                 ) : data.invoice.items ? (
@@ -529,6 +523,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
               backgroundColor: 'rgba(255, 255, 255, 0.9)'
             }}
           >
+            {/* Subtotal */}
             <div 
               className="flex justify-between p-4 border-b text-sm"
               style={{ borderColor: `${primaryColor}20` }}
@@ -641,11 +636,8 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
               {data.issuer.footer_text || 'Thank you for your business!'}
             </p>
             
-            {/* Watermark effect for print only */}
-            <div 
-              className="hidden print:block absolute inset-0 opacity-5 flex items-center justify-center pointer-events-none"
-              aria-hidden="true"
-            >
+            {/* Hidden watermark for paid invoices in print mode */}
+            <div className="hidden print:block absolute inset-0 opacity-5 flex items-center justify-center pointer-events-none" aria-hidden="true">
               <div className="transform rotate-45 text-8xl font-black text-gray-500">
                 {data.invoice.status === 'paid' ? 'PAID' : ''}
               </div>

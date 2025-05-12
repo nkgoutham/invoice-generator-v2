@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Percent } from 'lucide-react';
-import { UseFormRegister, Controller, Control, UseFormWatch } from 'react-hook-form';
+import { UseFormRegister, Controller, Control, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { InvoiceFormData } from '../../types/invoice';
 
 interface TaxSettingsProps {
   register: UseFormRegister<InvoiceFormData>;
   control: Control<InvoiceFormData>;
   watch: UseFormWatch<InvoiceFormData>;
-  setValue: any;
+  setValue: UseFormSetValue<InvoiceFormData>;
   updateTaxSettings: (taxPercentage: number, taxName?: string) => void;
 }
 
@@ -31,12 +31,19 @@ const TaxSettings: React.FC<TaxSettingsProps> = ({
   
   // Check if TDS should be auto-enabled based on subtotal
   useEffect(() => {
-    const subtotal = parseFloat(String(watchSubtotal || 0));
-    if (watchCurrency === 'INR' && subtotal > 30000 && watchIsTdsApplicable === undefined) {
-      setValue('is_tds_applicable', true);
-      setAutoTdsEnabled(true);
-    } else if (autoTdsEnabled && (watchCurrency !== 'INR' || subtotal <= 30000)) {
-      setAutoTdsEnabled(false);
+    try {
+      const subtotal = typeof watchSubtotal === 'string' 
+        ? parseFloat(watchSubtotal || '0') 
+        : (watchSubtotal || 0);
+        
+      if (watchCurrency === 'INR' && subtotal > 30000 && watchIsTdsApplicable === undefined) {
+        setValue('is_tds_applicable', true);
+        setAutoTdsEnabled(true);
+      } else if (autoTdsEnabled && (watchCurrency !== 'INR' || subtotal <= 30000)) {
+        setAutoTdsEnabled(false);
+      }
+    } catch (error) {
+      console.error('Error in TDS auto-enable logic:', error);
     }
   }, [watchSubtotal, watchCurrency, watchIsTdsApplicable, setValue, autoTdsEnabled]);
 

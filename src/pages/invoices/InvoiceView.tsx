@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInvoiceStore } from '../../store/invoiceStore';
 import { useProfileStore } from '../../store/profileStore';
@@ -7,6 +7,8 @@ import { normalizeInvoiceData } from '../../utils/invoiceDataTransform';
 import { InvoicePreviewData } from '../../types/invoice';
 import InvoicePreviewContent from '../../components/invoices/InvoicePreviewContent';
 import RecordPaymentModal from '../../components/invoices/RecordPaymentModal';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import toast from 'react-hot-toast';
 
 const InvoiceView = () => {
@@ -17,9 +19,9 @@ const InvoiceView = () => {
   const { profile, bankingInfo, fetchProfile, fetchBankingInfo } = useProfileStore();
   const { getClient } = useClientStore();
   
+  const [client, setClient] = useState<any>(null);
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [client, setClient] = useState<any>(null);
   
   useEffect(() => {
     if (id) {
@@ -152,14 +154,14 @@ const InvoiceView = () => {
         {showRecordPayment && (
           <button
             onClick={() => navigate(`/invoices/${id}`)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow-md text-sm font-medium"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Manage Invoice
           </button>
         )}
         <button
-          onClick={() => handleDownloadPDF()}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow-md text-sm font-medium"
+          onClick={handleDownloadPDF}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           Download PDF
         </button>
