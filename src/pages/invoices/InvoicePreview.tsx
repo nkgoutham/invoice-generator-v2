@@ -236,7 +236,7 @@ const InvoicePreview = () => {
   
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-0">
-      <div className="print:hidden mb-4 sm:mb-6">
+      <div className="print:hidden pdf-hidden mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3">
           <div className="flex items-center">
             <button
@@ -307,7 +307,7 @@ const InvoicePreview = () => {
         className="bg-white rounded-xl overflow-hidden shadow-xl print:shadow-none invoice-preview-container" 
         ref={invoiceRef}
       >
-        {previewData && <InvoicePreviewContent data={previewData} />}
+        {previewData && <InvoicePreviewContent data={previewData} allowDownload={false} />}
       </div>
 
       {/* Payment Recording Modal */}

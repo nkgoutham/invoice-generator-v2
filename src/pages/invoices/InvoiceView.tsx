@@ -138,7 +138,7 @@ const InvoiceView = () => {
   
   return (
     <div className="fixed inset-0 bg-gray-100 overflow-auto">
-      <div className="fixed top-4 right-4 z-10 space-x-2 print:hidden">
+      <div className="fixed top-4 right-4 z-10 space-x-2 print:hidden pdf-hidden">
         {showRecordPayment && (
           <button
             onClick={() => navigate(`/invoices/${id}`)}
@@ -155,7 +155,7 @@ const InvoiceView = () => {
         </button>
       </div>
       
-      {previewData && <InvoicePreviewContent data={previewData} allowDownload={true} />}
+      {previewData && <InvoicePreviewContent data={previewData} allowDownload={false} />}
       
       {/* Payment Recording Modal */}
       <RecordPaymentModal 

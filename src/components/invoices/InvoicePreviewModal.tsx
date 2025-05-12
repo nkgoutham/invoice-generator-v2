@@ -109,9 +109,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="full">
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full pdf-content">
         <div 
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-4 border-b border-gray-200 gap-y-2"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-4 border-b border-gray-200 gap-y-2 pdf-hidden"
           style={{ 
             borderColor: `${data.issuer.primary_color || '#3B82F6'}20`
           }}
@@ -177,7 +177,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         </div>
         <div className="flex-1 overflow-auto bg-gray-100 p-2 sm:p-4">
           <div className="max-w-4xl mx-auto bg-white rounded-xl overflow-hidden shadow-lg" ref={invoiceRef}>
-            <InvoicePreviewContent data={data} />
+            <InvoicePreviewContent data={data} allowDownload={false} />
           </div>
         </div>
       </div>
