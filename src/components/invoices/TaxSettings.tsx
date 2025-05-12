@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Percent } from 'lucide-react';
+import { Percent, Info } from 'lucide-react';
 import { UseFormRegister, Controller, Control, UseFormWatch, UseFormSetValue } from 'react-hook-form';
 import { InvoiceFormData } from '../../types/invoice';
 
@@ -32,20 +32,36 @@ const TaxSettings: React.FC<TaxSettingsProps> = ({
   // Check if TDS should be auto-enabled based on subtotal
   useEffect(() => {
     try {
-      const subtotal = typeof watchSubtotal === 'string' 
-        ? parseFloat(watchSubtotal || '0') 
-        : (watchSubtotal || 0);
-        
-      if (watchCurrency === 'INR' && subtotal > 30000 && watchIsTdsApplicable === undefined) {
-        setValue('is_tds_applicable', true);
-        setAutoTdsEnabled(true);
+      let subtotal = 0;
+      
+      // Calculate subtotal from items or milestones
+      const items = watch('items') || [];
+      const milestones = watch('milestones') || [];
+      
+      if (items.length > 0) {
+        subtotal = items.reduce((total, item) => {
+          return total + (Number(item.amount) || 0);
+        }, 0);
+      } else if (milestones.length > 0) {
+        subtotal = milestones.reduce((total, milestone) => {
+          return total + (Number(milestone.amount) || 0);
+        }, 0);
+      }
+      
+      // Auto-enable TDS for INR invoices > ₹30,000
+      if (watchCurrency === 'INR' && subtotal > 30000) {
+        if (watchIsTdsApplicable === undefined || watchIsTdsApplicable === null) {
+          setValue('is_tds_applicable', true);
+          setValue('tds_rate', 10); // Set default TDS rate
+          setAutoTdsEnabled(true);
+        }
       } else if (autoTdsEnabled && (watchCurrency !== 'INR' || subtotal <= 30000)) {
         setAutoTdsEnabled(false);
       }
     } catch (error) {
       console.error('Error in TDS auto-enable logic:', error);
     }
-  }, [watchSubtotal, watchCurrency, watchIsTdsApplicable, setValue, autoTdsEnabled]);
+  }, [watch, watchCurrency, watchIsTdsApplicable, setValue, autoTdsEnabled]);
 
   // Update tax settings when any tax-related field changes
   const handleTaxChange = () => {
@@ -69,6 +85,12 @@ const TaxSettings: React.FC<TaxSettingsProps> = ({
                 type="checkbox"
                 className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
                 {...register('is_gst_registered')}
+                onChange={(e) => {
+                  register('is_gst_registered').onChange(e);
+                  if (e.target.checked) {
+                    setValue('gst_rate', 18); // Set default GST rate when enabled
+                  }
+                }}
               />
             </div>
             <div className="ml-3 text-sm">
@@ -204,10 +226,24 @@ const TaxSettings: React.FC<TaxSettingsProps> = ({
                 type="checkbox"
                 className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
                 {...register('is_tds_applicable')}
+                onChange={(e) => {
+                  register('is_tds_applicable').onChange(e);
+                  if (e.target.checked) {
+                    setValue('tds_rate', 10); // Set default TDS rate when manually enabled
+                    handleTaxChange();
+                  } else {
+                    handleTaxChange();
+                  }
+                }}
               />
             </div>
             <div className="ml-3 text-sm">
-              <label htmlFor="is_tds_applicable" className="font-medium text-gray-700">TDS Applicable</label>
+              <label htmlFor="is_tds_applicable" className="font-medium text-gray-700">
+                TDS Applicable
+                {autoTdsEnabled && (
+                  <span className="ml-1 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">Auto</span>
+                )}
+              </label>
               <p className="text-gray-500">
                 {autoTdsEnabled 
                   ? "Automatically enabled as invoice amount exceeds ₹30,000" 
@@ -258,15 +294,20 @@ const TaxSettings: React.FC<TaxSettingsProps> = ({
         
         {/* Tax Information */}
         <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">Tax Information</h3>
-          <ul className="text-sm text-blue-700 space-y-1 list-disc pl-5">
-            <li>GST is added to your invoice subtotal</li>
-            <li>TDS is deducted from the payment you will receive</li>
-            <li>TDS is calculated on the base amount (before GST)</li>
-            {watchCurrency === 'INR' && (
-              <li>TDS is automatically enabled for invoices over ₹30,000</li>
-            )}
-          </ul>
+          <div className="flex items-start">
+            <Info className="h-4 w-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800 mb-2">Tax Information</h3>
+              <ul className="text-sm text-blue-700 space-y-1 list-disc pl-5">
+                <li>GST is added to your invoice subtotal</li>
+                <li>TDS is deducted from the payment you will receive</li>
+                <li>TDS is calculated on the base amount (before GST)</li>
+                {watchCurrency === 'INR' && (
+                  <li>TDS is automatically enabled for invoices over ₹30,000</li>
+                )}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
