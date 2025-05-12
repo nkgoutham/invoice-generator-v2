@@ -281,7 +281,8 @@ const Invoices = () => {
                       </Link>
                       
                       {/* Show different action buttons based on invoice status */}
-                      {invoice.status === 'draft' ? (
+                      {invoice.status === 'draft' && (
+                        <>
                         <Link
                           to={`/invoices/${invoice.id}`}
                           className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -289,7 +290,17 @@ const Invoices = () => {
                           <Edit className="mr-1 h-4 w-4" />
                           Edit
                         </Link>
-                      ) : invoice.status === 'sent' || invoice.status === 'overdue' ? (
+                          <button
+                            onClick={() => updateInvoiceStatus(invoice.id, 'sent')}
+                            className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <Send className="mr-1 h-4 w-4" />
+                            Mark as Sent
+                          </button>
+                        </>
+                      )}
+                      
+                      {(invoice.status === 'sent' || invoice.status === 'overdue') && (
                         <Link
                           to={`/invoices/${invoice.id}`}
                           className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -297,7 +308,17 @@ const Invoices = () => {
                           <CreditCard className="mr-1 h-4 w-4" />
                           Record Payment
                         </Link>
-                      ) : null}
+                      )}
+                      
+                      {invoice.status === 'partially_paid' && (
+                        <Link
+                          to={`/invoices/${invoice.id}`}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          <CreditCard className="mr-1 h-4 w-4" />
+                          Update Payment
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -55,7 +55,6 @@ const InvoiceDetails = () => {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [invoiceRef, setInvoiceRef] = useState<HTMLDivElement | null>(null);
   const [billableExpenses, setBillableExpenses] = useState<any[]>([]);
 
   useEffect(() => {
@@ -139,6 +138,8 @@ const InvoiceDetails = () => {
       setShowPaymentModal(false);
       // Refresh the invoice data
       fetchInvoice(id);
+      // Navigate back to invoices list after recording payment
+      navigate('/invoices');
     } catch (error) {
       console.error('Error recording payment:', error);
       toast.error('Failed to record payment');
@@ -162,6 +163,8 @@ const InvoiceDetails = () => {
       
       toast.success(`Invoice would be sent to ${clientEmail}`);
       // In a real implementation, you would call an API endpoint to send the email
+      // Navigate back to invoices list after sending
+      navigate('/invoices');
     } catch (error) {
       toast.error('Failed to update invoice status');
     }
@@ -243,7 +246,7 @@ const InvoiceDetails = () => {
   };
   
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-0" ref={(ref) => setInvoiceRef(ref)}>
+    <div className="max-w-5xl mx-auto px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3 mb-4 sm:mb-6">
         <div className="flex items-center">
           <Link
@@ -545,92 +548,34 @@ const InvoiceDetails = () => {
         )}
         
         <div className="p-4 sm:p-6 flex flex-wrap gap-2">
-          {/* Common action for all statuses */}
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={`/invoices/${id}/view`}
-              className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Eye className="mr-1.5 h-4 w-4" />
-              <span className="hidden xs:inline">View Invoice</span>
-            </Link>
-            
-            {/* Status-specific actions */}
-            {selectedInvoice.status === 'draft' && (
-              <>
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                  onClick={handleEdit}
-                >
-                  <Edit className="mr-1.5 h-4 w-4" />
-                  <span className="hidden xs:inline">Edit</span>
-                </button>
-                
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  onClick={() => handleStatusChange('sent')}
-                >
-                  <Send className="mr-1.5 h-4 w-4" />
-                  <span className="hidden xs:inline">Mark as Sent</span>
-                </button>
-                
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  onClick={handleSendInvoice}
-                >
-                  <Send className="mr-1.5 h-4 w-4" />
-                  <span className="hidden xs:inline">Send</span>
-                </button>
-                
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="mr-1.5 h-4 w-4" />
-                  <span className="hidden xs:inline">Delete</span>
-                </button>
-              </>
-            )}
-            
-            {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue') && (
-              <>
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  onClick={() => setShowPaymentModal(true)}
-                >
-                  <CreditCardIcon className="mr-1.5 h-4 w-4" />
-                  <span className="hidden xs:inline">Record Payment</span>
-                </button>
-                
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  onClick={handleSendInvoice}
-                >
-                  <Send className="mr-1.5 h-4 w-4" />
-                  <span className="hidden xs:inline">Send Reminder</span>
-                </button>
-              </>
-            )}
-            
-            {selectedInvoice.status === 'partially_paid' && (
-              <button
-                type="button"
-                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                onClick={() => setShowPaymentModal(true)}
-              >
-                <CreditCardIcon className="mr-1.5 h-4 w-4" />
-                <span className="hidden xs:inline">Update Payment</span>
-              </button>
-            )}
-          </div>
+          {/* This page is now only shown when user clicks Edit */}
+          <button
+            type="button"
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+            onClick={handleEdit}
+          >
+            <Edit className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">Edit</span>
+          </button>
+          
+          <button
+            type="button"
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            onClick={handleDelete}
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">Delete</span>
+          </button>
+          
+          <Link
+            to={`/invoices/${id}/view`}
+            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Eye className="mr-1.5 h-4 w-4" />
+            <span className="hidden xs:inline">View Invoice</span>
+          </Link>
         </div>
       </div>
 
