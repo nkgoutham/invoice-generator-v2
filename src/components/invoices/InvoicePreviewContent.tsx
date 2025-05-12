@@ -105,17 +105,18 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
   return (
     <div className="bg-white min-h-full relative overflow-hidden pdf-ready" ref={invoiceRef}>
       {/* Background abstract shapes for a modern look */}
-      <div 
+      <div
         className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10 hidden sm:block print:block pdf-force-show"
         style={{ backgroundColor: primaryColor }}
       ></div>
-      <div 
+      <div
         className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-10 hidden sm:block print:block pdf-force-show"
         style={{ backgroundColor: secondaryColor }}
       ></div>
       
+      {/* Download button - hidden in PDF mode */}
       {allowDownload && (
-        <div className="absolute top-4 right-4 z-10 print:hidden">
+        <div className="absolute top-4 right-4 z-10 print:hidden pdf-hidden">
           <button
             onClick={handleDownloadPDF}
             className="bg-white rounded-md shadow-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-200 flex items-center"
@@ -131,7 +132,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
       <div className="p-6 sm:p-8 md:p-10 max-w-5xl mx-auto relative z-10">
         {/* Header Section with modern design */}
         <div 
-          className="flex flex-col md:flex-row print:flex-row justify-between items-start md:items-center print:items-center border-b pb-6 md:pb-8 mb-8" 
+          className="flex flex-col md:flex-row print:flex-row justify-between items-start md:items-center print:items-center border-b pb-6 md:pb-8 mb-8"
           style={{ borderColor: `${primaryColor}40` }}
         >
           <div className="flex items-start space-x-4">
@@ -160,8 +161,8 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
               </div>
             )}
             <div className="pt-1">
-              <h1 
-                className="text-2xl md:text-3xl print:text-3xl font-bold tracking-tight" 
+              <h1
+                className="text-2xl md:text-3xl print:text-3xl font-bold tracking-tight"
                 style={{ color: primaryColor }}
               >
                 {data.issuer.business_name}
@@ -171,19 +172,19 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
               )}
               <div className="mt-2 space-y-2">
                 {data.issuer.phone && (
-                  <div className="inline-flex items-center text-gray-600 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="inline-flex items-start text-gray-600 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
-                    <span className="leading-none">{data.issuer.phone}</span>
+                    <span className="leading-tight text-left">{data.issuer.phone}</span>
                   </div>
                 )}
                 {data.issuer.pan_number && (
-                  <div className="inline-flex items-center text-gray-600 text-sm ml-0 md:ml-3 print:ml-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="inline-flex items-start text-gray-600 text-sm ml-0 md:ml-3 print:ml-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="leading-none">PAN: {data.issuer.pan_number}</span>
+                    <span className="leading-tight text-left">PAN: {data.issuer.pan_number}</span>
                   </div>
                 )}
               </div>
@@ -283,31 +284,31 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                   {data.client.email && (
                     <div className="flex items-center text-sm">
                       <span className="inline-flex items-center">
-                        <svg className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </span>
-                      <span>{data.client.email}</span>
+                      <span className="text-left">{data.client.email}</span>
                     </div>
                   )}
                   {data.client.phone && (
                     <div className="flex items-center text-sm">
                       <span className="inline-flex items-center">
-                        <svg className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
                       </span>
-                      <span>{data.client.phone}</span>
+                      <span className="text-left">{data.client.phone}</span>
                     </div>
                   )}
                   {data.client.gst_number && (
                     <div className="flex items-center text-sm">
                       <span className="inline-flex items-center">
-                        <svg className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </span>
-                      <span>GST: {data.client.gst_number}</span>
+                      <span className="text-left">GST: {data.client.gst_number}</span>
                     </div>
                   )}
                 </div>
@@ -339,21 +340,21 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                 <div className="text-gray-600 text-sm mt-3">
                   <div className="grid grid-cols-5 gap-1">
                     <span className="col-span-2 font-medium text-gray-700">Account:</span>
-                    <span className="col-span-3">{data.banking.account_holder}</span>
+                    <span className="col-span-3 text-left">{data.banking.account_holder}</span>
                     
                     <span className="col-span-2 font-medium text-gray-700">Number:</span>
-                    <span className="col-span-3">{data.banking.account_number}</span>
+                    <span className="col-span-3 text-left">{data.banking.account_number}</span>
                     
                     <span className="col-span-2 font-medium text-gray-700">Bank:</span>
-                    <span className="col-span-3">{data.banking.bank_name}</span>
+                    <span className="col-span-3 text-left">{data.banking.bank_name}</span>
                     
                     <span className="col-span-2 font-medium text-gray-700">IFSC:</span>
-                    <span className="col-span-3">{data.banking.ifsc_code}</span>
+                    <span className="col-span-3 text-left">{data.banking.ifsc_code}</span>
                     
                     {data.banking.branch && (
                       <>
                         <span className="col-span-2 font-medium text-gray-700">Branch:</span>
-                        <span className="col-span-3">{data.banking.branch}</span>
+                        <span className="col-span-3 text-left">{data.banking.branch}</span>
                       </>
                     )}
                   </div>
@@ -377,31 +378,31 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
                   <div className="text-gray-600 text-sm grid grid-cols-5 gap-1">
                     {data.invoice.payment_date && (
                       <>
-                        <span className="col-span-2 font-medium text-gray-700">Date:</span>
-                        <span className="col-span-3">{formatDate(data.invoice.payment_date)}</span>
+                        <span className="col-span-2 font-medium text-gray-700 text-left">Date:</span>
+                        <span className="col-span-3 text-left">{formatDate(data.invoice.payment_date)}</span>
                       </>
                     )}
                     {data.invoice.payment_method && (
                       <>
-                        <span className="col-span-2 font-medium text-gray-700">Method:</span>
-                        <span className="col-span-3">{getPaymentMethodText(data.invoice.payment_method)}</span>
+                        <span className="col-span-2 font-medium text-gray-700 text-left">Method:</span>
+                        <span className="col-span-3 text-left">{getPaymentMethodText(data.invoice.payment_method)}</span>
                       </>
                     )}
                     {data.invoice.payment_reference && (
                       <>
-                        <span className="col-span-2 font-medium text-gray-700">Reference:</span>
-                        <span className="col-span-3">{data.invoice.payment_reference}</span>
+                        <span className="col-span-2 font-medium text-gray-700 text-left">Reference:</span>
+                        <span className="col-span-3 text-left">{data.invoice.payment_reference}</span>
                       </>
                     )}
                     {data.invoice.status === 'partially_paid' && data.invoice.partially_paid_amount !== undefined && (
                       <>
-                        <span className="col-span-2 font-medium text-gray-700">Paid:</span>
-                        <span className="col-span-3 text-green-600 font-medium">
+                        <span className="col-span-2 font-medium text-gray-700 text-left">Paid:</span>
+                        <span className="col-span-3 text-green-600 font-medium text-left">
                           {formatCurrency(data.invoice.partially_paid_amount, data.invoice.currency)}
                         </span>
                         
-                        <span className="col-span-2 font-medium text-gray-700">Balance:</span>
-                        <span className="col-span-3">
+                        <span className="col-span-2 font-medium text-gray-700 text-left">Balance:</span>
+                        <span className="col-span-3 text-left">
                           {formatCurrency(data.invoice.total - data.invoice.partially_paid_amount, data.invoice.currency)}
                         </span>
                       </>
@@ -414,7 +415,7 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
         </div>
         
         {/* Invoice Items with 3D effect */}
-        <div className="mt-10">
+        <div className="mt-10 pdf-content">
           <div 
             className="rounded-xl overflow-hidden border shadow-lg print:shadow-none" 
             style={{ 
@@ -542,37 +543,3 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
             </h3>
             <p className="text-sm text-gray-600 whitespace-pre-line">{data.invoice.notes}</p>
           </div>
-        )}
-        
-        {/* Footer */}
-        <div className="mt-12 text-center">
-          <div 
-            className="p-4 border-t" 
-            style={{ borderColor: primaryColor }}
-          >
-            <p 
-              className="text-sm text-gray-500 relative"
-              style={{
-                textShadow: '0 1px 2px rgba(255,255,255,0.8)'
-              }}
-            >
-              {data.issuer.footer_text || 'Thank you for your business!'}
-            </p>
-            
-            {/* Watermark effect for print only */}
-            <div 
-              className="hidden print:block absolute inset-0 opacity-5 flex items-center justify-center pointer-events-none"
-              aria-hidden="true"
-            >
-              <div className="transform rotate-45 text-8xl font-black text-gray-500">
-                {data.invoice.status === 'paid' ? 'PAID' : ''}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default InvoicePreviewContent;
