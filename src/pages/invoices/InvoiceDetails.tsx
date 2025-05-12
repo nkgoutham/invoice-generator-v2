@@ -7,8 +7,6 @@ import { useProfileStore } from '../../store/profileStore';
 import { useExpenseStore } from '../../store/expenseStore';
 import {
   ArrowLeft,
-  Printer,
-  Download,
   Edit,
   Trash2,
   Send,
@@ -59,7 +57,6 @@ const InvoiceDetails = () => {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [isPrinting, setIsPrinting] = useState(false);
   const [invoiceRef, setInvoiceRef] = useState<HTMLDivElement | null>(null);
   const [previewData, setPreviewData] = useState<InvoicePreviewData | null>(null);
   const [billableExpenses, setBillableExpenses] = useState<any[]>([]);
@@ -217,60 +214,6 @@ const InvoiceDetails = () => {
     } catch (error) {
       console.error('Error recording payment:', error);
       toast.error('Failed to record payment');
-    }
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!invoiceRef) {
-      toast.error('Cannot generate PDF at this time');
-      return;
-    }
-    
-    setIsPrinting(true);
-    
-    try {
-      // Create a clone of the invoice element to apply PDF-specific styling without affecting the visible element
-      const invoiceClone = invoiceRef.cloneNode(true) as HTMLElement;
-      invoiceClone.classList.add('pdf-mode');
-      
-      // Temporarily append to the document but hide it
-      invoiceClone.style.position = 'absolute';
-      invoiceClone.style.left = '-9999px';
-      invoiceClone.style.width = '1024px'; // Force desktop width
-      document.body.appendChild(invoiceClone);
-      
-      const canvas = await html2canvas(invoiceClone, {
-        scale: 1.5, // Higher quality
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#FFFFFF',
-        windowWidth: 1200, // Force desktop-like rendering
-        width: 1024 // Fixed width to ensure desktop layout
-      });
-      
-      // Remove the clone after canvas generation
-      document.body.removeChild(invoiceClone);
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.8); // Use JPEG with compression
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true // Enable compression
-      });
-      
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`Invoice-${selectedInvoice?.invoice_number}.pdf`);
-      toast.success('PDF downloaded successfully');
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
-    } finally {
-      setIsPrinting(false);
     }
   };
 
@@ -674,16 +617,6 @@ const InvoiceDetails = () => {
             <Eye className="mr-1.5 h-4 w-4" />
             <span className="hidden xs:inline">View Invoice</span>
           </Link>
-          
-          <button
-            type="button"
-            className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            onClick={handleDownloadPDF}
-            disabled={isPrinting}
-          >
-            <Download className="mr-1.5 h-4 w-4" />
-            <span className="hidden xs:inline">{isPrinting ? 'Generating...' : 'Download PDF'}</span>
-          </button>
           
           <button
             type="button"
