@@ -576,5 +576,3 @@ const InvoicePreviewContent: React.FC<InvoicePreviewContentProps> = ({
 };
 
 export default InvoicePreviewContent;
-
-export default InvoicePreviewContent

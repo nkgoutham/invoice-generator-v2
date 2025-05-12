@@ -1,0 +1,1 @@
+const e=[{value:"bank_transfer",label:"Bank Transfer"},{value:"cash",label:"Cash"},{value:"cheque",label:"Cheque"},{value:"upi",label:"UPI"},{value:"other",label:"Other"}],l=[{value:"weekly",label:"Weekly"},{value:"monthly",label:"Monthly"},{value:"quarterly",label:"Quarterly"},{value:"yearly",label:"Yearly"}];export{l as F,e as P};

@@ -1,0 +1,7 @@
+import{h as i,a as o,j as e,L as t,D as c,O as m}from"./index-DMTdQ3St.js";import{A as l}from"./arrow-left-DgZupmuo.js";import{M as x}from"./mail-CvfNZUA1.js";const p=()=>{const s=i(),r=o(),a=s.pathname.includes("/settings/reminders"),n=s.pathname.includes("/settings/currency");return e.jsxs("div",{className:"max-w-6xl mx-auto px-4 sm:px-0",children:[e.jsxs("div",{className:"flex items-center mb-6",children:[e.jsx("button",{type:"button",onClick:()=>r("/dashboard"),className:"mr-4 text-gray-500 hover:text-gray-700",children:e.jsx(l,{className:"h-5 w-5"})}),e.jsx("h1",{className:"text-xl sm:text-2xl font-bold text-gray-900",children:"Settings"})]}),e.jsx("div",{className:"mb-6 border-b border-gray-200",children:e.jsxs("nav",{className:"-mb-px flex space-x-6","aria-label":"Settings sections",children:[e.jsxs(t,{to:"/settings/reminders",className:`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center
+              ${a?"border-blue-500 text-blue-600":"border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}
+            `,children:[e.jsx(x,{className:"mr-2 h-4 w-4"}),"Email Reminders"]}),e.jsxs(t,{to:"/settings/currency",className:`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center
+              ${n?"border-blue-500 text-blue-600":"border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}
+            `,children:[e.jsx(c,{className:"mr-2 h-4 w-4"}),"Currency Settings"]})]})}),e.jsx(m,{})]})};export{p as default};
