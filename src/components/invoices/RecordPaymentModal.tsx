@@ -32,7 +32,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     payment_method: 'bank_transfer',
     payment_reference: '',
     amount: invoice.total,
-    is_partially_paid: false
+    is_partially_paid: false,
     amount: invoice.total,
     is_partially_paid: false
   });
@@ -41,40 +41,6 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      
-      if (name === 'is_partially_paid') {
-        // If switching to partial payment, set amount to 0
-        // If switching to full payment, set amount to invoice total
-        const newAmount = checked ? 0 : invoice.total;
-        
-        setPaymentDetails(prev => ({
-          ...prev,
-          [name]: checked,
-          amount: newAmount
-        }));
-      } else {
-        setPaymentDetails(prev => ({
-          ...prev,
-          [name]: checked
-        }));
-      }
-    } else {
-      setPaymentDetails(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-
-    // Clear validation errors when user makes changes
-    setValidationError(null);
-  };
-  
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
@@ -172,6 +138,7 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       await onSave({
         ...paymentDetails,
         status: paymentDetails.is_partially_paid ? 'partially_paid' : 'paid'
+      });
       await onSave({
         ...paymentDetails,
         status: paymentDetails.is_partially_paid ? 'partially_paid' : 'paid'
@@ -189,97 +156,6 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Record Payment" size="md">
       <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-        <div className="space-y-4 sm:space-y-6">
-          {validationError && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-sm">
-              {validationError}
-            </div>
-          )}
-
-          {/* Payment Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Status
-            </label>
-            <div className="mt-1 flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              <div className="flex items-center">
-                <input
-                  id="full_payment"
-                  name="is_partially_paid"
-                  type="radio"
-                  checked={!paymentDetails.is_partially_paid}
-                  onChange={() => setPaymentDetails(prev => ({
-                    ...prev,
-                    is_partially_paid: false,
-                    amount: invoice.total
-                  }))}
-                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                />
-                <label htmlFor="full_payment" className="ml-2 block text-sm text-gray-700">
-                  Full Payment
-                  <span className="ml-1 text-sm text-gray-500">
-                    ({formatCurrency(invoice.total, invoice.currency)})
-                  </span>
-                </label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  id="partial_payment"
-                  name="is_partially_paid"
-                  type="radio"
-                  checked={paymentDetails.is_partially_paid}
-                  onChange={() => setPaymentDetails(prev => ({
-                    ...prev,
-                    is_partially_paid: true,
-                    amount: 0
-                  }))}
-                  className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                />
-                <label htmlFor="partial_payment" className="ml-2 block text-sm text-gray-700">
-                  Partial Payment
-                </label>
-              </div>
-            </div>
-          </div>
-          
-          {/* Payment Amount - Show only for partial payments */}
-          {paymentDetails.is_partially_paid && (
-            <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Amount
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">
-                    {invoice.currency === 'USD' ? '$' : '₹'}
-                  </span>
-                </div>
-                <input
-                  type="number"
-                  id="amount"
-                  name="amount"
-                  min="0.01"
-                  step="0.01"
-                  max={invoice.total.toString()}
-                  value={paymentDetails.amount || ''}
-                  onChange={handleAmountChange}
-                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-                  placeholder=""
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center">
-                  <span className="text-gray-500 pr-3 text-xs sm:text-sm">
-                    of {formatCurrency(invoice.total, invoice.currency)}
-                  </span>
-                </div>
-              </div>
-              
-              {paymentDetails.is_partially_paid && paymentDetails.amount > 0 && (
-                <p className="mt-1 text-sm text-gray-500">
-                  Remaining balance: {formatCurrency(invoice.total - paymentDetails.amount, invoice.currency)}
-                </p>
-              )}
-            </div>
-          )}
         <div className="space-y-4 sm:space-y-6">
           {validationError && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-sm">
@@ -427,7 +303,6 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
               value={paymentDetails.payment_reference}
               onChange={handleChange}
               className="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-              placeholder="e.g., Bank reference, UPI ID, etc."
               placeholder="e.g., Bank reference, UPI ID, etc."
               max={today}
             />
