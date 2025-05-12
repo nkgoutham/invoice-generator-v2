@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useInvoiceStore } from '../../store/invoiceStore';
@@ -20,15 +20,22 @@ import {
 } from 'lucide-react';
 import { Invoice } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/helpers';
+import { PaymentDetails } from '../../types/invoice';
+import toast from 'react-hot-toast';
+
+// Lazy load the payment modal
+const RecordPaymentModal = lazy(() => import('../../components/invoices/RecordPaymentModal'));
 
 const Invoices = () => {
   const { user } = useAuthStore();
-  const { invoices, loading, error, fetchInvoices, updateInvoiceStatus } = useInvoiceStore();
+  const { invoices, loading, error, fetchInvoices, updateInvoiceStatus, recordPayment } = useInvoiceStore();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   useEffect(() => {
     if (user) {
@@ -117,6 +124,33 @@ const Invoices = () => {
         return <DollarSign className="h-4 w-4 mr-1.5" />;
       default:
         return <FileText className="h-4 w-4 mr-1.5" />;
+    }
+  };
+  
+  const handleRecordPayment = (invoice: Invoice) => {
+    setSelectedInvoiceForPayment(invoice);
+    setShowPaymentModal(true);
+  };
+  
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    setSelectedInvoiceForPayment(null);
+  };
+  
+  const savePayment = async (paymentDetails: PaymentDetails) => {
+    if (!selectedInvoiceForPayment?.id) return;
+    
+    try {
+      await recordPayment(selectedInvoiceForPayment.id, paymentDetails);
+      toast.success('Payment recorded successfully');
+      closePaymentModal();
+      
+      // Refresh invoice list
+      if (user) {
+        fetchInvoices(user.id);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to record payment');
     }
   };
   
@@ -270,6 +304,7 @@ const Invoices = () => {
                       </div>
                     </div>
                     <div className="mt-2 flex justify-end">
+                      {/* View Invoice Button (Always visible) */}
                       <Link
                         to={`/invoices/${invoice.id}/view`}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-2"
@@ -280,19 +315,20 @@ const Invoices = () => {
                         View Invoice
                       </Link>
                       
-                      {/* Show different action buttons based on invoice status */}
+                      {/* Status-specific actions */}
                       {invoice.status === 'draft' && (
                         <>
-                        <Link
-                          to={`/invoices/${invoice.id}`}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          <Edit className="mr-1 h-4 w-4" />
-                          Edit
-                        </Link>
+                          <Link
+                            to={`/invoices/new`}
+                            state={{ isEditing: true, invoice: invoice }}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-2"
+                          >
+                            <Edit className="mr-1 h-4 w-4" />
+                            Edit
+                          </Link>
                           <button
                             onClick={() => updateInvoiceStatus(invoice.id, 'sent')}
-                            className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           >
                             <Send className="mr-1 h-4 w-4" />
                             Mark as Sent
@@ -301,23 +337,23 @@ const Invoices = () => {
                       )}
                       
                       {(invoice.status === 'sent' || invoice.status === 'overdue') && (
-                        <Link
-                          to={`/invoices/${invoice.id}`}
+                        <button
+                          onClick={() => handleRecordPayment(invoice)}
                           className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           <CreditCard className="mr-1 h-4 w-4" />
                           Record Payment
-                        </Link>
+                        </button>
                       )}
                       
                       {invoice.status === 'partially_paid' && (
-                        <Link
-                          to={`/invoices/${invoice.id}`}
+                        <button
+                          onClick={() => handleRecordPayment(invoice)}
                           className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           <CreditCard className="mr-1 h-4 w-4" />
                           Update Payment
-                        </Link>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -347,6 +383,20 @@ const Invoices = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedInvoiceForPayment && (
+        <Suspense fallback={<div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>}>
+          <RecordPaymentModal
+            isOpen={showPaymentModal}
+            onClose={closePaymentModal}
+            onSave={savePayment}
+            invoice={selectedInvoiceForPayment}
+          />
+        </Suspense>
       )}
     </div>
   );
