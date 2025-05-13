@@ -7,7 +7,6 @@ import { useAuthStore } from '../../store/authStore';
 import { useExpenseStore, ExpenseCategory } from '../../store/expenseStore';
 import { useClientStore } from '../../store/clientStore';
 import { useEmployeeStore } from '../../store/employeeStore';
-import { useEmployeeStore } from '../../store/employeeStore';
 import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, Plus, FileInput as FileInvoice, User } from 'lucide-react';
 
 interface ExpenseFormData {
