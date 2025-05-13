@@ -11,7 +11,8 @@ import {
   Edit, 
   ExternalLink,
   CheckCircle,
-  Building
+  Building,
+  User
 } from 'lucide-react';
 
 interface ExpenseItemProps {
@@ -82,6 +83,14 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ expense, onDelete }) => {
                       <span>{expense.client.company_name || expense.client.name}</span>
                     </>
                   )}
+                  
+                  {expense.is_salary && expense.employee && (
+                    <>
+                      <span className="mx-1.5">•</span>
+                      <User className="flex-shrink-0 mr-1.5 h-3.5 w-3.5 text-gray-400" />
+                      <span>{expense.employee.name}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -91,6 +100,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ expense, onDelete }) => {
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                   <CheckCircle className="mr-1 h-3 w-3" />
                   Billable
+                </span>
+              )}
+              
+              {expense.is_salary && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                  <User className="mr-1 h-3 w-3" />
+                  Salary
                 </span>
               )}
               

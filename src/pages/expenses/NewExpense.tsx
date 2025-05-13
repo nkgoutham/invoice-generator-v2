@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { useExpenseStore, ExpenseCategory } from '../../store/expenseStore';
 import { useClientStore } from '../../store/clientStore';
-import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, Plus, FileInput as FileInvoice } from 'lucide-react';
+import { useEmployeeStore } from '../../store/employeeStore';
+import { ArrowLeft, Upload, Calendar, DollarSign, Tag, Building, FileText, Trash2, Plus, FileInput as FileInvoice, User } from 'lucide-react';
 
 interface ExpenseFormData {
   date: string;
@@ -22,6 +24,10 @@ interface ExpenseFormData {
   reimbursed: boolean;
   payment_method?: string;
   currency: string;
+  employee_id?: string;
+  is_salary?: boolean;
+  salary_type?: string;
+  hours_worked?: number;
 }
 
 const PAYMENT_METHODS = [
@@ -39,17 +45,25 @@ const RECURRING_FREQUENCIES = [
   { value: 'yearly', label: 'Yearly' }
 ];
 
+const SALARY_TYPES = [
+  { value: 'hourly', label: 'Hourly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'project', label: 'Project-based' },
+  { value: 'other', label: 'Other' }
+];
+
 const NewExpense = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { createExpense, categories, fetchCategories, uploadReceipt, loading } = useExpenseStore();
   const { clients, fetchClients } = useClientStore();
+  const { employees, fetchEmployees } = useEmployeeStore();
   
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
-  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<ExpenseFormData>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors }, reset } = useForm<ExpenseFormData>({
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       amount: 0,
@@ -59,20 +73,68 @@ const NewExpense = () => {
       is_billable: false,
       is_reimbursable: false,
       reimbursed: false,
-      currency: 'INR'
+      currency: 'INR',
+      is_salary: false,
+      salary_type: '',
+      hours_worked: 0
     }
   });
   
   const watchIsRecurring = watch('is_recurring');
   const watchIsBillable = watch('is_billable');
   const watchIsReimbursable = watch('is_reimbursable');
+  const watchIsSalary = watch('is_salary');
+  const watchSalaryType = watch('salary_type');
+  const watchEmployeeId = watch('employee_id');
   
   useEffect(() => {
     if (user) {
       fetchCategories(user.id);
       fetchClients(user.id);
+      fetchEmployees(user.id);
     }
-  }, [user, fetchCategories, fetchClients]);
+  }, [user, fetchCategories, fetchClients, fetchEmployees]);
+  
+  // When an employee is selected, pre-fill some fields based on employee data
+  useEffect(() => {
+    if (watchEmployeeId && watchIsSalary) {
+      const selectedEmployee = employees.find(emp => emp.id === watchEmployeeId);
+      if (selectedEmployee) {
+        // Set description to include employee name
+        setValue('description', `Salary payment - ${selectedEmployee.name}`);
+        
+        // Set currency based on employee preference
+        if (selectedEmployee.currency_preference) {
+          setValue('currency', selectedEmployee.currency_preference);
+        }
+        
+        // If salary type is monthly and monthly_salary is set, use that as amount
+        if (watchSalaryType === 'monthly' && selectedEmployee.monthly_salary) {
+          setValue('amount', selectedEmployee.monthly_salary);
+        }
+        
+        // If salary type is hourly, set the hourly rate but don't set the amount yet
+        // (it will be calculated based on hours worked)
+        if (watchSalaryType === 'hourly' && selectedEmployee.hourly_rate) {
+          // We'll calculate the amount when hours_worked changes
+        }
+      }
+    }
+  }, [watchEmployeeId, watchIsSalary, watchSalaryType, employees, setValue]);
+  
+  // Calculate amount for hourly salary when hours change
+  const handleHoursWorkedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (watchIsSalary && watchSalaryType === 'hourly' && watchEmployeeId) {
+      const hours = parseFloat(e.target.value) || 0;
+      setValue('hours_worked', hours);
+      
+      const selectedEmployee = employees.find(emp => emp.id === watchEmployeeId);
+      if (selectedEmployee && selectedEmployee.hourly_rate) {
+        const amount = hours * selectedEmployee.hourly_rate;
+        setValue('amount', amount);
+      }
+    }
+  };
   
   const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -128,6 +190,10 @@ const NewExpense = () => {
         recurring_frequency: data.is_recurring ? data.recurring_frequency : null,
         // Only include client_id if is_billable is true
         client_id: data.is_billable ? data.client_id : null,
+        // Only include employee fields if is_salary is true
+        employee_id: data.is_salary ? data.employee_id : null,
+        salary_type: data.is_salary ? data.salary_type : null,
+        hours_worked: (data.is_salary && data.salary_type === 'hourly') ? data.hours_worked : null,
       });
       
       if (expense) {
@@ -422,6 +488,21 @@ const NewExpense = () => {
                       <p className="text-gray-500">This expense will be reimbursed</p>
                     </div>
                   </div>
+                  
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        id="is_salary"
+                        type="checkbox"
+                        className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        {...register('is_salary')}
+                      />
+                    </div>
+                    <div className="ml-3 text-sm">
+                      <label htmlFor="is_salary" className="font-medium text-gray-700">Employee Salary</label>
+                      <p className="text-gray-500">This expense is a salary payment to an employee</p>
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Conditional fields based on checkboxes */}
@@ -496,6 +577,107 @@ const NewExpense = () => {
                       <label htmlFor="reimbursed" className="font-medium text-gray-700">Already reimbursed</label>
                       <p className="text-gray-500">Mark if you've already been reimbursed for this expense</p>
                     </div>
+                  </div>
+                )}
+                
+                {/* Employee Salary Fields */}
+                {watchIsSalary && (
+                  <div className="space-y-4 border-t border-gray-200 pt-4 mt-4">
+                    <h3 className="text-sm font-medium text-gray-700">Salary Details</h3>
+                    
+                    <div>
+                      <label htmlFor="employee_id" className="block text-sm font-medium text-gray-700 mb-1">
+                        Employee
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <User className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <select
+                          id="employee_id"
+                          className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                            errors.employee_id ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          {...register('employee_id', { 
+                            required: watchIsSalary ? 'Employee is required for salary expenses' : false 
+                          })}
+                        >
+                          <option value="">Select an employee</option>
+                          {employees.map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                              {employee.name} {employee.designation ? `(${employee.designation})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {errors.employee_id && (
+                        <p className="mt-1 text-sm text-red-600">{errors.employee_id.message}</p>
+                      )}
+                      <div className="mt-1 text-xs text-gray-500 flex items-center">
+                        <Link to="/employees/new" className="text-blue-600 hover:text-blue-800 flex items-center">
+                          <Plus className="h-3 w-3 mr-1" /> Add new employee
+                        </Link>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="salary_type" className="block text-sm font-medium text-gray-700 mb-1">
+                        Salary Type
+                      </label>
+                      <select
+                        id="salary_type"
+                        className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                          errors.salary_type ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        {...register('salary_type', { 
+                          required: watchIsSalary ? 'Salary type is required' : false 
+                        })}
+                      >
+                        <option value="">Select salary type</option>
+                        {SALARY_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.salary_type && (
+                        <p className="mt-1 text-sm text-red-600">{errors.salary_type.message}</p>
+                      )}
+                    </div>
+                    
+                    {watchSalaryType === 'hourly' && (
+                      <div>
+                        <label htmlFor="hours_worked" className="block text-sm font-medium text-gray-700 mb-1">
+                          Hours Worked
+                        </label>
+                        <input
+                          type="number"
+                          id="hours_worked"
+                          min="0"
+                          step="0.5"
+                          className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                            errors.hours_worked ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          {...register('hours_worked', { 
+                            required: watchIsSalary && watchSalaryType === 'hourly' ? 'Hours worked is required' : false,
+                            min: { value: 0.5, message: 'Hours worked must be at least 0.5' },
+                            valueAsNumber: true
+                          })}
+                          onChange={handleHoursWorkedChange}
+                        />
+                        {errors.hours_worked && (
+                          <p className="mt-1 text-sm text-red-600">{errors.hours_worked.message}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {watchIsSalary && watchIsBillable && (
+                      <div className="bg-yellow-50 p-3 rounded-md">
+                        <p className="text-sm text-yellow-700">
+                          <strong>Note:</strong> This salary expense will be associated with the selected client.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

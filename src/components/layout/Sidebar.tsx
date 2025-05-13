@@ -10,7 +10,11 @@ import {
   RefreshCw,
   Settings,
   TrendingUp,
-  PlayCircle
+  PlayCircle,
+  Clock,
+  CreditCard,
+  BarChart2,
+  Building
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useState } from 'react';
@@ -72,6 +76,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile = false, closeSidebar }) => {
       name: 'Expenses',
       path: '/expenses',
       icon: <Receipt className="w-5 h-5" />,
+    },
+    {
+      name: 'Employees',
+      path: '/employees',
+      icon: <Users className="w-5 h-5" />,
     },
     {
       name: 'Profile',

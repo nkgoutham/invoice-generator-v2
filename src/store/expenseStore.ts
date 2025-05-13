@@ -22,10 +22,21 @@ export interface Expense {
   reimbursed?: boolean;
   payment_method?: string | null;
   currency: string;
+  employee_id?: string | null;
+  is_salary?: boolean;
+  salary_type?: string | null;
+  hours_worked?: number | null;
   category?: ExpenseCategory;
   client?: {
     name: string;
     company_name?: string;
+  };
+  employee?: {
+    name: string;
+    designation?: string;
+    hourly_rate?: number;
+    monthly_salary?: number;
+    currency_preference?: string;
   };
 }
 
@@ -78,7 +89,8 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
         .select(`
           *,
           category:category_id(id, name, color),
-          client:client_id(name, company_name)
+          client:client_id(name, company_name),
+          employee:employee_id(name, designation, hourly_rate, monthly_salary, currency_preference)
         `)
         .eq('user_id', userId)
         .order('date', { ascending: false });
@@ -103,7 +115,8 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
         .select(`
           *,
           category:category_id(id, name, color),
-          client:client_id(name, company_name)
+          client:client_id(name, company_name),
+          employee:employee_id(name, designation, hourly_rate, monthly_salary, currency_preference)
         `)
         .eq('id', id)
         .single();
