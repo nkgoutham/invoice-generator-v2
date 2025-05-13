@@ -162,3 +162,19 @@ export interface Document {
   type?: 'contract' | 'scope' | 'other' | null;
   created_at?: string;
 }
+
+export interface Employee {
+  id: string;
+  user_id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  designation?: string | null;
+  hourly_rate?: number | null;
+  monthly_salary?: number | null;
+  join_date?: string | null;
+  status?: string;
+  notes?: string | null;
+  currency_preference?: string;
+  created_at?: string;
+}

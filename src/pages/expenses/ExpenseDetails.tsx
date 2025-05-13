@@ -14,7 +14,8 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  CreditCard
+  CreditCard,
+  User
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -165,10 +166,40 @@ const ExpenseDetails = () => {
               </div>
             </div>
           )}
-        </div>
-        
-        {/* Status Indicators */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            
+            {selectedExpense.is_salary && selectedExpense.employee && (
+              <div className="flex items-start space-x-3">
+                <User className="text-gray-500 mt-1 flex-shrink-0" size={18} />
+                <div>
+                  <p className="text-sm text-gray-500">Employee</p>
+                  <p className="font-medium">{selectedExpense.employee.name}</p>
+                  {selectedExpense.employee.designation && (
+                    <p className="text-sm text-gray-500">{selectedExpense.employee.designation}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {selectedExpense.is_salary && selectedExpense.salary_type && (
+              <div className="flex items-start space-x-3">
+                <DollarSign className="text-gray-500 mt-1 flex-shrink-0" size={18} />
+                <div>
+                  <p className="text-sm text-gray-500">Salary Type</p>
+                  <p className="font-medium">
+                    {selectedExpense.salary_type.charAt(0).toUpperCase() + selectedExpense.salary_type.slice(1)}
+                    {selectedExpense.salary_type === 'hourly' && selectedExpense.hours_worked && (
+                      <span className="ml-1 text-sm text-gray-500">
+                        ({selectedExpense.hours_worked} hours)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Status Indicators */}
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
           {selectedExpense.is_billable && (
             <div className="bg-blue-50 p-3 rounded-lg flex items-center">
               <CheckCircle className="h-5 w-5 text-blue-500 mr-2" />
@@ -203,6 +234,25 @@ const ExpenseDetails = () => {
               </div>
             </div>
           )}
+            
+            {selectedExpense.is_salary && (
+              <div className="bg-purple-50 p-3 rounded-lg flex items-center">
+                <User className="h-5 w-5 text-purple-500 mr-2" />
+                <div>
+                  <p className="text-sm font-medium text-purple-700">Employee Salary</p>
+                  <p className="text-xs text-purple-600">
+                    {selectedExpense.salary_type === 'hourly' 
+                      ? `Hourly payment (${selectedExpense.hours_worked} hours)` 
+                      : selectedExpense.salary_type === 'monthly'
+                      ? 'Monthly salary'
+                      : selectedExpense.salary_type === 'project'
+                      ? 'Project-based payment'
+                      : 'Salary payment'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
