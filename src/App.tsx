@@ -34,6 +34,10 @@ const RecurringInvoiceDetails = lazy(() => import('./pages/recurring/RecurringIn
 const InvoiceReminders = lazy(() => import('./pages/settings/InvoiceReminders'));
 const CurrencySettings = lazy(() => import('./pages/settings/CurrencySettings'));
 const SettingsLayout = lazy(() => import('./pages/settings/SettingsLayout'));
+const Employees = lazy(() => import('./pages/employees/Employees'));
+const NewEmployee = lazy(() => import('./pages/employees/NewEmployee'));
+const EmployeeDetails = lazy(() => import('./pages/employees/EmployeeDetails'));
+const EditEmployee = lazy(() => import('./pages/employees/EditEmployee'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading component for suspense
@@ -194,6 +198,28 @@ function App() {
             <Route path="expenses/:id/edit" element={
               <Suspense fallback={<Loading />}>
                 <EditExpense />
+              </Suspense>
+            } />
+            
+            {/* Employee Routes */}
+            <Route path="employees" element={
+              <Suspense fallback={<Loading />}>
+                <Employees />
+              </Suspense>
+            } />
+            <Route path="employees/new" element={
+              <Suspense fallback={<Loading />}>
+                <NewEmployee />
+              </Suspense>
+            } />
+            <Route path="employees/:id" element={
+              <Suspense fallback={<Loading />}>
+                <EmployeeDetails />
+              </Suspense>
+            } />
+            <Route path="employees/:id/edit" element={
+              <Suspense fallback={<Loading />}>
+                <EditEmployee />
               </Suspense>
             } />
             

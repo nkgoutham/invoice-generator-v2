@@ -12,7 +12,8 @@ import {
   FileText,
   DollarSign,
   Tag,
-  Building
+  Building,
+  User
 } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -45,6 +46,7 @@ const ExpenseReports = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [billableFilter, setBillableFilter] = useState<string>('all');
+  const [salaryFilter, setSalaryFilter] = useState<string>('all');
   const [currencyFilter, setCurrencyFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -60,6 +62,8 @@ const ExpenseReports = () => {
     billableUSD: 0,
     reimbursableINR: 0,
     reimbursableUSD: 0,
+    salaryINR: 0,
+    salaryUSD: 0,
     count: 0
   });
   
@@ -104,6 +108,15 @@ const ExpenseReports = () => {
         }
       }
       
+      // Apply salary filter
+      if (salaryFilter !== 'all') {
+        if (salaryFilter === 'salary') {
+          filtered = filtered.filter(expense => expense.is_salary);
+        } else if (salaryFilter === 'non-salary') {
+          filtered = filtered.filter(expense => !expense.is_salary);
+        }
+      }
+      
       // Currency filter
       if (currencyFilter !== 'all') {
         filtered = filtered.filter(expense => expense.currency === currencyFilter);
@@ -121,12 +134,14 @@ const ExpenseReports = () => {
           // Add to billable/reimbursable if applicable
           if (expense.is_billable) acc.billableINR += expense.amount;
           if (expense.is_reimbursable) acc.reimbursableINR += expense.amount;
+          if (expense.is_salary) acc.salaryINR += expense.amount;
         } else {
           acc.totalUSD += expense.amount;
           
           // Add to billable/reimbursable if applicable
           if (expense.is_billable) acc.billableUSD += expense.amount;
           if (expense.is_reimbursable) acc.reimbursableUSD += expense.amount;
+          if (expense.is_salary) acc.salaryUSD += expense.amount;
         }
         
         return acc;
@@ -137,13 +152,15 @@ const ExpenseReports = () => {
         billableUSD: 0,
         reimbursableINR: 0,
         reimbursableUSD: 0,
+        salaryINR: 0,
+        salaryUSD: 0,
         count: 0
       });
       
       setFilteredExpenses(filtered);
       setSummary(summaryData);
     }
-  }, [expenses, startDate, endDate, categoryFilter, clientFilter, billableFilter, currencyFilter]);
+  }, [expenses, startDate, endDate, categoryFilter, clientFilter, billableFilter, salaryFilter, currencyFilter]);
   
   const handleRefresh = async () => {
     if (!user) return;
@@ -339,6 +356,23 @@ const ExpenseReports = () => {
               </select>
             </div>
             
+            {/* Salary Filter */}
+            <div>
+              <label htmlFor="salary-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                Salary
+              </label>
+              <select
+                id="salary-filter"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={salaryFilter}
+                onChange={(e) => setSalaryFilter(e.target.value)}
+              >
+                <option value="all">All Expenses</option>
+                <option value="salary">Salary Only</option>
+                <option value="non-salary">Non-Salary Only</option>
+              </select>
+            </div>
+            
             {/* Currency Filter */}
             <div>
               <label htmlFor="currency-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -402,6 +436,20 @@ const ExpenseReports = () => {
               <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <p className="text-sm text-gray-500">Billable (USD)</p>
                 <p className="text-xl font-semibold mt-1">{formatCurrency(summary.billableUSD, 'USD')}</p>
+              </div>
+            )}
+            
+            {summary.salaryINR > 0 && (
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <p className="text-sm text-gray-500">Salary Expenses (INR)</p>
+                <p className="text-xl font-semibold mt-1">{formatCurrency(summary.salaryINR, 'INR')}</p>
+              </div>
+            )}
+            
+            {summary.salaryUSD > 0 && (
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <p className="text-sm text-gray-500">Salary Expenses (USD)</p>
+                <p className="text-xl font-semibold mt-1">{formatCurrency(summary.salaryUSD, 'USD')}</p>
               </div>
             )}
           </div>
@@ -519,9 +567,9 @@ const ExpenseReports = () => {
                             {expense.reimbursed ? 'Reimbursed' : 'Reimbursable'}
                           </span>
                         )}
-                        {expense.is_recurring && (
+                        {expense.is_salary && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                            Recurring
+                            Salary
                           </span>
                         )}
                       </div>
