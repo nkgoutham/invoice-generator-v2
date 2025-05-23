@@ -237,6 +237,15 @@ const InvoiceDetails = () => {
     }
   };
   
+  // Find the payment recorded history entry to display exchange rate or INR amount
+  const paymentHistoryEntry = invoiceHistory.find(entry => 
+    entry.action === 'payment_recorded' && 
+    (entry.details?.exchange_rate || entry.details?.inr_amount)
+  );
+  
+  const showExchangeRateInfo = selectedInvoice.currency === 'USD' && 
+    (paymentHistoryEntry?.details?.exchange_rate || paymentHistoryEntry?.details?.inr_amount);
+  
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-y-3 mb-4 sm:mb-6">
@@ -384,6 +393,29 @@ const InvoiceDetails = () => {
                     <span className="block text-gray-500 mt-0.5">
                       Balance: {formatCurrency(selectedInvoice.total - selectedInvoice.partially_paid_amount, selectedInvoice.currency)}
                     </span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show exchange rate or INR amount for USD invoices */}
+              {showExchangeRateInfo && (
+                <div className="flex items-start text-sm col-span-1 sm:col-span-2 bg-blue-50 p-2 rounded">
+                  <DollarSign className="mr-2 h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    {paymentHistoryEntry?.details?.exchange_rate && (
+                      <div>
+                        <span className="text-gray-600">Exchange Rate:</span>
+                        <span className="ml-2 font-medium">
+                          ₹{paymentHistoryEntry.details.exchange_rate.toFixed(2)} per USD
+                        </span>
+                      </div>
+                    )}
+                    {paymentHistoryEntry?.details?.inr_amount && (
+                      <div>
+                        <span className="text-gray-600">INR Amount Received:</span>
+                        <span className="ml-2 font-medium">₹{paymentHistoryEntry.details.inr_amount.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
