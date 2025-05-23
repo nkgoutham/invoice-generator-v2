@@ -1,7 +1,8 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { useAuthStore } from './store/authStore';
+import { useAuthStore, setupAuthErrorInterceptor } from './store/authStore';
+import { setNavigate } from './utils/navigation';
 
 // Components that are used immediately
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -56,11 +57,29 @@ const Loading = () => (
 );
 
 function App() {
-  const { init, isAuthenticated, loading } = useAuthStore();
+  const { init, isAuthenticated, loading, error } = useAuthStore();
+  const navigate = useNavigate();
+  
+  // Set the navigate function for global use
+  useEffect(() => {
+    setNavigate(navigate);
+  }, [navigate]);
+  
+  // Setup auth error interceptor for global auth error handling
+  useEffect(() => {
+    setupAuthErrorInterceptor();
+  }, []);
 
   useEffect(() => {
     init();
   }, [init]);
+
+  // Show error toast if auth error occurs
+  useEffect(() => {
+    if (error) {
+      // Handle specific session errors here if needed
+    }
+  }, [error]);
 
   if (loading) {
     return <Loading />;

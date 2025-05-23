@@ -1,33 +1,43 @@
-import { Navigate } from 'react-router-dom';
+import { ReactNode, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import toast from 'react-hot-toast';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuthStore();
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated, loading, error, refreshSession } = useAuthStore();
+  const location = useLocation();
 
+  useEffect(() => {
+    // If there's an authentication error, try to refresh the session
+    if (error && error.includes('session has expired')) {
+      refreshSession().then((success) => {
+        if (!success) {
+          toast.error('Your session has expired. Please log in again.');
+        }
+      });
+    }
+  }, [error, refreshSession]);
+
+  // If loading, return null or a loading spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-neutral-50">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-t-3 border-b-3 border-accent-500 animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full bg-white"></div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-4 w-4 rounded-full bg-accent-100 animate-pulse"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    // Save the location they were trying to go to
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // If authenticated, render the protected component
   return <>{children}</>;
 };
 
