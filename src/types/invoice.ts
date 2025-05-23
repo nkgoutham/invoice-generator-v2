@@ -105,9 +105,9 @@ export interface PaymentDetails {
   payment_reference: string;
   amount: number;
   is_partially_paid: boolean;
-  amount: number;
-  is_partially_paid: boolean;
   status?: string;
+  exchange_rate?: number;   // New field for USD to INR exchange rate
+  inr_amount_received?: number;  // New field for total INR amount received
 }
 
 export const PAYMENT_METHODS = [

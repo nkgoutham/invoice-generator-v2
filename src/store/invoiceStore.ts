@@ -506,7 +506,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       // First, check if the invoice is already paid to prevent duplicate payments
       const { data: currentInvoice, error: fetchError } = await supabase
         .from('invoices')
-        .select('id, status, total, partially_paid_amount, is_partially_paid')
+        .select('id, status, total, currency, partially_paid_amount, is_partially_paid, user_id, client_id')
         .eq('id', id)
         .single();
         
@@ -518,7 +518,15 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       }
       
       // Determine if this is a full or partial payment
-      const { payment_date, payment_method, payment_reference, amount, is_partially_paid } = paymentDetails;
+      const { 
+        payment_date, 
+        payment_method, 
+        payment_reference, 
+        amount, 
+        is_partially_paid,
+        exchange_rate,
+        inr_amount_received
+      } = paymentDetails;
       
       // Calculate the total payment amount
       let newTotalPaid = amount;
@@ -559,6 +567,45 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       
       if (error) throw error;
       
+      // Create a revenue entry for this payment
+      let amountInr = null;
+      let amountUsd = null;
+      
+      // Set amounts based on currency
+      if (currentInvoice.currency === 'USD') {
+        // For USD invoices, determine INR amount
+        amountUsd = amount;
+        
+        // Use provided INR amount or calculate from exchange rate
+        if (inr_amount_received) {
+          amountInr = inr_amount_received;
+        } else if (exchange_rate) {
+          amountInr = amount * exchange_rate;
+        }
+      } else {
+        // For INR invoices, just set the INR amount
+        amountInr = amount;
+      }
+      
+      // Create the revenue entry
+      const { error: revenueError } = await supabase
+        .from('revenue_entries')
+        .insert([{
+          user_id: currentInvoice.user_id,
+          invoice_id: id,
+          client_id: currentInvoice.client_id,
+          amount_inr: amountInr,
+          amount_usd: amountUsd,
+          payment_date,
+          payment_method,
+          payment_reference
+        }]);
+      
+      if (revenueError) {
+        console.error('Error creating revenue entry:', revenueError);
+        // Don't throw here, as the payment was already recorded successfully
+      }
+      
       // Update the local state if the invoice exists in our store
       const selectedInvoice = get().selectedInvoice;
       if (selectedInvoice && selectedInvoice.id === id) {
@@ -586,7 +633,9 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           payment_method: paymentDetails.payment_method,
           amount: paymentDetails.amount,
           is_partially_paid: !isPaid,
-          total_paid: newTotalPaid
+          total_paid: newTotalPaid,
+          exchange_rate: exchange_rate,
+          inr_amount: inr_amount_received || (exchange_rate ? amount * exchange_rate : undefined)
         }
       });
       set({ invoiceHistory: history });

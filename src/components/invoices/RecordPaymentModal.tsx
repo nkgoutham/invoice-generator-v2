@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { PAYMENT_METHODS, PaymentDetails } from '../../types/invoice';
@@ -30,11 +30,20 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     payment_method: 'bank_transfer',
     payment_reference: '',
     amount: invoice.total,
-    is_partially_paid: false
+    is_partially_paid: false,
+    exchange_rate: undefined,
+    inr_amount_received: undefined
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showCurrencyFields, setShowCurrencyFields] = useState(false);
+  const [exchangeRateOption, setExchangeRateOption] = useState<'rate' | 'amount'>('rate');
+  
+  // Show currency fields only for USD invoices
+  useEffect(() => {
+    setShowCurrencyFields(invoice.currency === 'USD');
+  }, [invoice.currency]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -77,6 +86,38 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     }));
     setValidationError(null);
   };
+
+  const handleExchangeRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+    setPaymentDetails(prev => ({
+      ...prev,
+      exchange_rate: value,
+      // Clear the INR amount when rate is changed
+      inr_amount_received: undefined
+    }));
+    setValidationError(null);
+  };
+
+  const handleInrAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+    setPaymentDetails(prev => ({
+      ...prev,
+      inr_amount_received: value,
+      // Clear the exchange rate when INR amount is changed
+      exchange_rate: undefined
+    }));
+    setValidationError(null);
+  };
+
+  const handleExchangeRateOptionChange = (option: 'rate' | 'amount') => {
+    setExchangeRateOption(option);
+    // Clear both values when switching options
+    setPaymentDetails(prev => ({
+      ...prev,
+      exchange_rate: undefined,
+      inr_amount_received: undefined
+    }));
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +141,37 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
         }));
       }
       return;
+    }
+
+    // Validate currency fields if applicable
+    if (showCurrencyFields) {
+      if (exchangeRateOption === 'rate' && !paymentDetails.exchange_rate) {
+        setValidationError('Please enter the USD to INR exchange rate');
+        return;
+      }
+      
+      if (exchangeRateOption === 'amount' && !paymentDetails.inr_amount_received) {
+        setValidationError('Please enter the INR amount received');
+        return;
+      }
+
+      // If exchange rate is provided, calculate INR amount received
+      if (paymentDetails.exchange_rate && !paymentDetails.inr_amount_received) {
+        const inrAmount = paymentDetails.amount * paymentDetails.exchange_rate;
+        setPaymentDetails(prev => ({
+          ...prev,
+          inr_amount_received: inrAmount
+        }));
+      }
+
+      // If INR amount is provided but not exchange rate, calculate the rate
+      if (paymentDetails.inr_amount_received && !paymentDetails.exchange_rate && paymentDetails.amount > 0) {
+        const calculatedRate = paymentDetails.inr_amount_received / paymentDetails.amount;
+        setPaymentDetails(prev => ({
+          ...prev,
+          exchange_rate: calculatedRate
+        }));
+      }
     }
     
     setIsSubmitting(true);
@@ -224,6 +296,103 @@ const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
                 <p className="mt-1 text-sm text-gray-500">
                   Remaining balance: {formatCurrency(invoice.total - paymentDetails.amount, invoice.currency)}
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* USD to INR conversion - Show only for USD invoices */}
+          {showCurrencyFields && (
+            <div className="mt-4 border-t border-gray-200 pt-4">
+              <div className="mb-3">
+                <p className="text-sm font-medium text-gray-700">USD to INR Conversion</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Specify either the exchange rate or the total INR amount received
+                </p>
+              </div>
+
+              <div className="flex space-x-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleExchangeRateOptionChange('rate')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                    exchangeRateOption === 'rate'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Enter Exchange Rate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExchangeRateOptionChange('amount')}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md ${
+                    exchangeRateOption === 'amount'
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Enter INR Amount
+                </button>
+              </div>
+
+              {exchangeRateOption === 'rate' ? (
+                <div>
+                  <label htmlFor="exchange_rate" className="block text-sm font-medium text-gray-700 mb-1">
+                    USD to INR Exchange Rate
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <input
+                      type="number"
+                      id="exchange_rate"
+                      name="exchange_rate"
+                      min="1"
+                      step="0.01"
+                      value={paymentDetails.exchange_rate || ''}
+                      onChange={handleExchangeRateChange}
+                      className="focus:ring-blue-500 focus:border-blue-500 block w-full pr-12 sm:text-sm border-gray-300 rounded-md"
+                      placeholder="e.g., 83.5"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center">
+                      <span className="text-gray-500 pr-3 text-sm">
+                        ₹/$ 
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {paymentDetails.exchange_rate && paymentDetails.amount > 0 && (
+                    <p className="mt-1 text-sm text-green-600">
+                      Equivalent to ₹{(paymentDetails.exchange_rate * paymentDetails.amount).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="inr_amount_received" className="block text-sm font-medium text-gray-700 mb-1">
+                    Total INR Amount Received
+                  </label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">₹</span>
+                    </div>
+                    <input
+                      type="number"
+                      id="inr_amount_received"
+                      name="inr_amount_received"
+                      min="1"
+                      step="0.01"
+                      value={paymentDetails.inr_amount_received || ''}
+                      onChange={handleInrAmountChange}
+                      className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 sm:text-sm border-gray-300 rounded-md"
+                      placeholder="e.g., 83500"
+                    />
+                  </div>
+                  
+                  {paymentDetails.inr_amount_received && paymentDetails.amount > 0 && (
+                    <p className="mt-1 text-sm text-green-600">
+                      Equivalent to {(paymentDetails.inr_amount_received / paymentDetails.amount).toFixed(2)} ₹/$
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
